@@ -9,7 +9,7 @@ function realTimeChartMulti() {
       datum, data,
       maxSeconds = 300, pixelsPerSecond = 10,
       svgWidth = 700, svgHeight = 300,
-      margin = { top: 20, bottom: 20, left:     100, right: 30, topNav: 10, bottomNav: 20 },
+      margin = { top: 20, bottom: 20, left: 100, right: 30, topNav: 10, bottomNav: 20 },
       dimension = { chartTitle: 20, xAxis: 20, yAxis: 20, xTitle: 20, yTitle: 20, navChart: 70 },
       maxY = 100, minY = 0,
       chartTitle, yTitle, xTitle,
@@ -185,15 +185,12 @@ function realTimeChartMulti() {
 
     // first, the full time domain
     var endTime = new Date(ts);
-    console.log(endTime)
-    var startTime = new Date(endTime.getTime() - maxSeconds * 30000);
-    console.log(startTime)
-    var interval = endTime.getTime() - startTime.getTime()*30000;
-    console.log(interval)
+    var startTime = new Date(endTime.getTime() - maxSeconds * 1000);
+    var interval = endTime.getTime() - startTime.getTime();
 
     // then the viewport time domain (what's visible in the main chart and the viewport in the nav chart)
     var endTimeViewport = new Date(ts);
-    var startTimeViewport = new Date(endTime.getTime() - width / pixelsPerSecond * 3900);
+    var startTimeViewport = new Date(endTime.getTime() - width / pixelsPerSecond * 1000);
     var intervalViewport = endTimeViewport.getTime() - startTimeViewport.getTime();
     var offsetViewport = startTimeViewport.getTime() - startTime.getTime();
 
@@ -222,7 +219,7 @@ function realTimeChartMulti() {
 
           // handle invisible viewport
           if (intervalViewport == 0) {
-            intervalViewport = maxSeconds * 30000;
+            intervalViewport = maxSeconds * 1000;
             offsetViewport = 0;
           }
 
@@ -294,7 +291,6 @@ function realTimeChartMulti() {
           });
 
       // update items; added items are now part of the update selection
-     updateSel.trans
       updateSel
           .attr("x", function(d) { 
             var retVal = null;
@@ -394,16 +390,6 @@ function realTimeChartMulti() {
           .attr("cy", function(d) {
             return yNav(d.category);
           })
-      
-      svg.selectAll("circle")  // For new circle, go through the update process
-            .data(data)
-            .enter()
-            .append("circle")
-            .attr(data["story_sentiment"])
-            .on("mouseover",  function(){
-      d3.select(this).transition().duration(300)
-        .style("background-color", "#FFD700");
-    })
     
     } // end refreshChart function
 
@@ -426,9 +412,7 @@ function realTimeChartMulti() {
 
       // compute new nav extents
       endTime = new Date();
-      //console.log(endTime)
-      startTime = new Date(endTime.getTime() - maxSeconds * 300000);
-      //console.log(startTime)
+      startTime = new Date(endTime.getTime() - maxSeconds * 1000);
 
       // compute new viewport extents 
       startTimeViewport = new Date(startTime.getTime() + offset);
@@ -436,7 +420,7 @@ function realTimeChartMulti() {
       viewport.extent([startTimeViewport, endTimeViewport])
 
       // update scales
-      x.domain([startTime, endTime]);
+      x.domain([startTimeViewport, endTimeViewport]);
       xNav.domain([startTime, endTime]);
 
       // update axis
