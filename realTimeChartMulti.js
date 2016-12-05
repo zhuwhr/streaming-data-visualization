@@ -96,7 +96,7 @@ function realTimeChartMulti() {
         .attr("class", "barGroup")
         .attr("transform", "translate(0, 0)")
         .attr("clip-path", "url(#myClip")
-      .append("g");
+        .append("g");
 
     // add group for x axis
     xAxisG = main.append("g")
@@ -291,6 +291,18 @@ function realTimeChartMulti() {
           .attr("class", "bar")
           .attr("id", function() { 
             return "bar-" + barId++; 
+          })
+          .on("mouseenter", (d, i) => {
+            alert('a');
+            d3.select("#tooltip").style({
+                visibility: "visible",
+                opacity: 1
+            }).text( d => { return d.entities[name] + '\n' + d.entities[ticker] + '\n' + d.entities[sector] + '\n' + d.entities[rigion]} )
+          })  
+          .on("mouseleave" , function(d, i) { 
+            d3.select("#tooltip").style({
+                visibility: "hidden",
+                opacity: 0
           });
 
       // update items; added items are now part of the update selection
@@ -394,19 +406,7 @@ function realTimeChartMulti() {
           .attr("cy", function(d) {
             return yNav(d.category);
           })
-      
-      svg.selectAll("circle")  // For new circle, go through the update process
-            .data(data)
-            .enter()
-            .append("circle")
-            .attr(data["story_sentiment"])
-            .on("mouseover",  function(){
-      d3.select(this).transition().duration(300)
-        .style("background-color", "#FFD700");
-    })
-    
-    } // end refreshChart function
-
+      }) // end refreshChart function
 
     function getTagName(that) {
       var tagName = d3.select(that).node().tagName;
@@ -542,4 +542,5 @@ function realTimeChartMulti() {
   
   return chart;
 
-} // end realTimeChart function
+}
+}
