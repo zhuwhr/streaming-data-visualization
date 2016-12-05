@@ -1,0 +1,74 @@
+from flask import Flask, render_template, session, jsonify
+from flask_socketio import SocketIO, emit
+import urllib2
+import json
+import threading
+
+# Set this variable to "threading", "eventlet" or "gevent" to test the
+# different async modes, or leave it set to None for the application to choose
+# the best option based on installed packages.
+from requests import post
+
+async_mode = None
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app, async_mode=async_mode)
+thread = None
+
+@app.route('/')
+def index():
+    return render_template('index1.html', async_mode=socketio.async_mode)
+
+@app.route('/articles')
+def articles():
+    auth_token = "Token token=f0fc702567df451dc5c346b98881eaea"
+    req = urllib2.Request("http://feed.accern.com/v3/alphas", None, {"Authorization": auth_token, "Content-type": 'application/json'})
+    print req
+    response = urllib2.urlopen(req)
+    html = response.read()
+    json_obj = json.loads(html)
+
+    return jsonify(json_obj)
+
+
+@socketio.on('my_event', namespace='/articles')
+def handle_message(message):
+    # emit('my_response',
+    #      {'data': message['data']})
+    threading.Timer(180, get_response_json_object("http://feed.accern.com/v3/alphas",0)).start()
+
+@app.route('/getarticles')
+def get_response_json_object(url, max):
+
+    auth_token="Token token=f0fc702567df451dc5c346b98881eaea"
+    req=urllib2.Request(url, None, {"Authorization":auth_token,"Content-type":'application/json'})
+    print req
+    response=urllib2.urlopen(req)
+    html=response.read()
+    json_obj=json.loads(html)
+    print jsonify(json_obj)
+    seen = set()
+    tempMax = 0
+    newData = {'list': []}
+    for d in json_obj:
+        oid=d["id"]
+        if oid <= max:
+            break
+        if oid > tempMax:
+            tempMax = oid
+        if oid not in seen:
+            print oid
+            seen.add(oid)
+            newData['list'].append(d)
+    if tempMax > max:
+        max = tempMax
+    if len(newData['list']) > 0:
+        data1 = json.dumps(newData, sort_keys = False, indent = 2)
+        print "MAX: " + str(max)
+        emit('my_response',
+                 {'data': data1})
+    threading.Timer(180, get_response_json_object("http://feed.accern.com/v3/alphas", max)).start()
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True)
