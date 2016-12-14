@@ -7,7 +7,6 @@ import time
 from Backend.app import es,socketio,app
 from requests import post
 
-
 def get_response_json_object(url, max):
 
     auth_token = "Token token=f0fc702567df451dc5c346b98881eaea"
