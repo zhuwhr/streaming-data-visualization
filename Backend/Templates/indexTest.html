@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Author: Bo Ericsson -->
+  <title>Real Time Chart Multi</title>
+  <link rel=stylesheet type=text/css href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css" media="all">
+  <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+  <!--<link rel=stylesheet type=text/css href="../_lib/bootstrap.min.css" media="all">-->
+  <style>
+  .axis text {
+    font: 10px sans-serif;
+  }
+  .chartTitle {
+    font-size: 12px;
+    font-weight: bold;
+    text-anchor: middle; 
+  }
+  .axis .title {
+    font-weight: bold;
+    text-anchor: middle;
+  }
+  .axis path,
+  .axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+  }
+  .x.axis path {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+  }
+  .nav .area {
+    fill: lightgrey;
+    stroke-width: 0px;
+  }
+  .nav .line {
+    fill: none;
+    stroke: darkgrey;
+    stroke-width: 1px;
+  }
+  .viewport {
+    stroke: grey;
+    fill: black;
+    fill-opacity: 0.3;
+  }
+  .viewport .extent {
+    fill: green;
+  }
+  .well {
+    padding-top: 0px;
+    padding-bottom: 0px;
+  }
+  </style>
+<body>
+
+<div style="max-width: 900px; max-height: 400px; padding: 10px">
+
+  <div class="well">
+    <h4>D3 Based Real Time Chart with Multiple Data Streams</h4>
+  </div>
+  <input id="debug" type="checkbox" name="debug" value="debug" style="margin-bottom: 10px" /> Debug
+  <input id="halt" type="checkbox" name="halt" value="halt" style="margin-bottom: 10px" /> Halt
+
+  <div id="viewDiv"></div>
+
+</div>
+<!--<script src="../realTimeChartMulti.js"></script>-->
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" charset="utf-8">
+
+$(document).ready(function() {
+
+            var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + '/articles');
+
+            socket.on('connect', function() {
+                socket.emit('get_top_articles', {data: 'FBC'});
+            });
+
+            socket.on('my_response', function(msg) {
+
+                $('#viewDiv').append('<br>' + $('<div/>').text('Articles Received:' + msg.data[0]._source.id).html());
+            });
+});
+
+</script>
+</body>
+</html>

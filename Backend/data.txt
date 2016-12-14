@@ -1,0 +1,33 @@
+from elasticsearch import Elasticsearch, RequestsHttpConnection
+es = Elasticsearch(
+    ['localhost:9200'],
+    connection_class=RequestsHttpConnection
+)
+
+//get all
+response = es.search(index='articles', doc_type='article',body={"query": {"match_all": {}}}, size=2000)
+
+//search
+response = es.search(index='articles', doc_type='article',body={"""query": {"term": {"id":"966063"}}}, size=2000)
+
+//example
+response = es.search(index='articles', doc_type='article',body={"_source":["entities.ticker"],"query": {"term": {"id":"966063"}}}, size=2000)
+>>> response['hits']['hits']
+[{u'_score': 1.0, u'_type': u'article', u'_id': u'AVjDmlHZgeWVOPQHWFJw', u'_source': {u'entities': [{u'ticker': u'DXB'}]}, u'_index': u'articles'}]
+
+//search ticker
+response = es.search(index='articles', doc_type='article',body={"query": {"bool": {"must":[{"match":{"entities.ticker":"DXB"}}]}}}, size=2000)
+
+//search string
+response = es.search(index='articles', doc_type='article',body={"query": {"query_string": {"query":"966063"}}}, size=2000)
+
+//find max id
+response = es.search(index='articles', doc_type='article',body={"aggs": {"max_id":{"max":{"field":"id"}}}}, size=1)
+response['aggregations']['max_id']['value']
+
+//find articles with id greater then 966063"query": {"range": {"id":{"gt":966063}}}}, size=2000)
+
+response = es.search(index='articles', doc_type='article',body={"_source":["entities.ti
+response = es.search(index='articles', doc_type='article',body={cker"],"aggs": {"group_by_ticker":{"terms":{"field":"entities"}}},"aggs":{"ticker":{"terms":{"field":"ticker"}}}}, size=2000)
+
+{"articles":{"mappings":{"article":{"properties":{"article_id":{"properties":{"$oid":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}}}},"article_sentiment":{"type":"float"},"article_type":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"article_url":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"entities":{"properties":{"competitors":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"country":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"entity_id":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"exchange":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"global_id":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"index":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"industry":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"name":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"region":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"sector":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"ticker":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"type":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}}},"type":"nested","include_in_parent": true},"event_author_rank":{"properties":{"author_rank":{"type":"long"},"event_group":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}}}},"event_groups":{"properties":{"group":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"type":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}}}},"event_impact_score":{"properties":{"on_entities":{"properties":{"entity":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"on_entity":{"type":"long"}}},"overall":{"type":"float"}}},"event_source_rank":{"properties":{"event_group":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"source_rank":{"type":"long"}}},"event_summary":{"properties":{"acting_party":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"action":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"group":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"sub-theme":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"sub_theme":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"theme":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"topic":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}}}},"first_mention":{"type":"boolean"},"harvested_at":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"id":{"type":"long"},"overall_author_rank":{"type":"long"},"overall_source_rank":{"type":"long"},"story_id":{"properties":{"$oid":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}}}},"story_saturation":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"story_sentiment":{"type":"float"},"story_volume":{"type":"long"}}}}}}
