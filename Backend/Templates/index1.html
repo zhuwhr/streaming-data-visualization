@@ -56,6 +56,9 @@
     padding-top: 0px;
     padding-bottom: 0px;
   }
+      .tick line {
+            stroke: lightgray;
+        }
       #tooltip {
             position: absolute;
             top: 0;
@@ -265,6 +268,9 @@ function realTimeChartMulti() {
       xAxis, yAxis,
       svg;
 
+  
+  var chartInnerHeight = svgHeight - margin.top - margin.bottom;
+  var chartInnerWidth = svgWidth - margin.left - margin.right;
   // create the chart
   var chart = function(s) {
     selection = s;
@@ -420,7 +426,7 @@ function realTimeChartMulti() {
 
     // define main chart axis
     xAxis = d3.svg.axis().orient("bottom");
-    yAxis = d3.svg.axis().scale(y).orient("right");
+    yAxis = d3.svg.axis().tickSize(-svgWidth).scale(y).orient("right");
 
 
 
