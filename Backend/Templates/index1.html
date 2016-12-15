@@ -1,871 +1,876 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Real Time Chart Multi</title>
-  <link rel=stylesheet type=text/css href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css" media="all">
-  <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
-  <style>
-    #viewDiv {
-   position: fixed;
-   top: 45%;
-   left: 50%;
-   transform: translate(-50%, -50%);
-    }
-  .axis text {
-    font: 10px sans-serif;
-  }
-  .chartTitle {
-    font-size: 12px;
-    font-weight: bold;
-    text-anchor: middle; 
-  }
-  .axis .title {
-    font-weight: bold;
-    text-anchor: middle;
-  }
-  .axis path,
-  .axis line {
-    fill: none;
-    stroke: #000;
-    shape-rendering: crispEdges;
-  }
-  .x.axis path {
-    fill: none;
-    stroke: #000;
-    shape-rendering: crispEdges;
-  }
-  .nav .area {
-    fill: lightgrey;
-    stroke-width: 0px;
-  }
-  .nav .line {
-    fill: none;
-    stroke: darkgrey;
-    stroke-width: 1px;
-  }
-  .viewport {
-    stroke: grey;
-    fill: black;
-    fill-opacity: 0.3;
-  }
-  .viewport .extent {
-    fill: green;
-  }
-  .well {
-    padding-top: 0px;
-    padding-bottom: 0px;
-  }
-      .tick line {
+    <!doctype html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Real Time Chart Multi</title>
+        <link rel=stylesheet type=text/css
+              href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css" media="all">
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+        <style>
+        #viewDiv {
+           position: fixed;
+           top: 45%;
+           left: 50%;
+           transform: translate(-50%, -45%);
+        }
+        .axis text {;
+            font: 8px sans-serif bold;
+        }
+        .chartTitle {
+            font-size: 17px;
+            font-weight: bold;
+            text-anchor: middle;
+        }
+        .axis .title {
+            font-weight: bold;
+            text-anchor: middle;
+        }
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+        .x.axis path {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+        .nav .area {
+            fill: lightgrey;
+            stroke-width: 0px;
+        }
+        .nav .line {
+            fill: none;
+            stroke: darkgrey;
+            stroke-width: 1px;
+        }
+        .tick line {
             stroke: lightgray;
         }
-      #tooltip {
+        .viewport {
+            stroke: grey;
+            fill: black;
+            fill-opacity: 0.3;
+        }
+        .viewport .extent {
+            fill: maroon;
+        }
+        .well {
+            padding-top: 0px;
+            padding-bottom: 0px;
+        }
+        #tooltip {
             position: absolute;
             top: 0;
             left: 0;
-            border: 1px solid grey;
-            background-color: white;
-            padding: 2px;
+            color: #fff;
+            font-weight: bold;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.8);
             visibility: hidden;
-            opacity: 0.7;
+            opacity: 0.1;
             transition: all 0.5s;
+            border-radius: 10px;
         }
-  </style>
-<body>
-<div class="well text-center">
-    <h4 align="center">D3 Based Real Time Chart with Multiple Data Streams</h4>
-</div>  
-<div style="max-width: 900px; max-height: 450px; padding: 3px">
+        .switch {
+          position: relative;
+          display: inline-block;
+          width: 40px;
+          height: 24px;
+        }
+        .switch input {
+            display:none;
+        }
+        .slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #ccc;
+          -webkit-transition: .4s;
+          transition: .4s;
+        }
 
-  
-  <input id="debug" type="checkbox" style="visibility:hidden" name="debug" value="" style="margin-bottom: 10px" />
-  <input id="halt" type="checkbox" name="halt" value="" style="visibility:hidden" />
+        .slider:before {
+          position: absolute;
+          content: "";
+          height: 16px;
+          width: 16px;
+          left: 4px;
+          bottom: 4px;
+          background-color: white;
+          -webkit-transition: .4s;
+          transition: .4s;
+        }
+
+        input:checked + .slider {
+          background-color: #2196F3;
+        }
+
+        input:focus + .slider {
+          box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked + .slider:before {
+          -webkit-transform: translateX(16px);
+          -ms-transform: translateX(16px);
+          transform: translateX(16px);
+        }
+
+        /* Rounded sliders */
+        .slider.round {
+          border-radius: 34px;
+        }
+
+        .slider.round:before {
+          border-radius: 50%;
+        }
 
 
-  <div id="viewDiv"
-    style= "background-color: #f3f3f3;"></div>
-<!--add tooltip here-->
-  <div id="tooltip">Tooltip</div>
+        </style>
+    <body>
+    <div class="well text-center">
+        <h4 align="center">Streaming Data Monitoring</h4>
+    </div>
+    <div align="center">
+        <b>Monitoring Mode</b><br>
+    <label class="switch">
+        <input type="checkbox" checked>
+        <div class="slider round"></div> 
+    </label>
+        </div>
+    <div style="max-width: 900px; max-height: 450px; padding: 3px">
 
-  <div id="dropdown" style="margin-left: 5px; margin-top: 5px">
-    <select id="mySelect" size="10">
-      </select>
+
+        <input id="debug" type="checkbox" style="visibility:hidden" name="debug" value="" style="margin-bottom: 10px"/>
+        <input id="halt" type="checkbox" name="halt" value="" style="visibility:hidden"/>
+
+        <div id="viewDiv"
+             style="background-color: #f3f3f3;"></div>
+        <!--add tooltip here-->
+        <div id="tooltip">Tooltip</div>
+
+
     </div>
 
-</div>
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
+    <script type="text/javascript" charset="utf-8">
 
-<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>-->
-<!--<script src="../_lib/d3.min.js"></script>-->
-<!--<script src="../realTimeChartMulti.js"></script>-->
-<script src="https://d3js.org/d3.v3.min.js"></script>
-<script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
-<script type="text/javascript" charset="utf-8">
-
-'use strict';
-var yArr = ["Technology"];
-//yArr.push(["SBUX"]);
-var storySaturation = '{"saturation":[{"high":"0.8","medium":"0.6","low":"0.4"}]}';
-// create the real time chart
-var chart = realTimeChartMulti()
-    .title("Streaming Data Monitoring")
-    .yTitle("Sector")
-    .xTitle("Time")
-    .yDomain(yArr) // initial y domain (note array)
-    .border(true)
-    .width(750)
-    .height(400);
+    'use strict';
+    var yArr = ["Technology"];
+    //yArr.push(["SBUX"]);
+    var storySaturation = '{"saturation":[{"high":"0.8","medium":"0.6","low":"0.4"}]}';
+    // create the real time chart
+    var chart = realTimeChartMulti()
+        .title("Streaming Data Monitoring")
+        .yTitle("Sector")
+        .xTitle("Time")
+        .yDomain(yArr) // initial y domain (note array)
+        .border(true)
+        .width(900)
+        .height(400);
 
 
-// invoke the chart
-var chartDiv = d3.select("#viewDiv").append("div")
-    .attr("id", "chartDiv")
-    .call(chart);
+    // invoke the chart
+    var chartDiv = d3.select("#viewDiv").append("div")
+        .attr("id", "chartDiv")
+        .call(chart);
 
-// alternative and equivalent invocation
-//chart(chartDiv); 
+    // alternative and equivalent invocation
+    //chart(chartDiv); 
 
-// event handler for debug checkbox
-d3.select("#debug").on("change", function() {
-  var state = d3.select(this).property("checked")
-  chart.debug(state);
-})
-
-// event handler for halt checkbox
-d3.select("#halt").on("change", function() {
-  var state = d3.select(this).property("checked")
-  chart.halt(state);
-})
-
-
-// configure the data generator
-
-// mean and deviation for generation of time intervals
-var tX = 5; // time constant, multiple of one second
-var meanMs = 1000 * tX, // milliseconds
-    dev = 200 * tX; // std dev
-
-// define time scale
-var timeScale = d3.scale.linear()
-    .domain([300 * tX, 1700 * tX])
-    .range([300 * tX, 1700 * tX])
-    .clamp(true);
-
-// define function that returns normally distributed random numbers
-var normal = d3.random.normal(meanMs, dev);
-
-// define color scale
-var color = d3.scale.category10();
-
-
-// convert objects into cloudlines items and display
-var cloudLines = function (data){
-  console.log(data.length+":"+JSON.stringify(data));
-  for(var i=0; i<data.length;i++){
-
-     var d = data[i]._source;
-     console.log(JSON.stringify(d));
-     var select  = d3.select("#mySelect").append("select"),
-     options = select.selectAll("option").data(d);
-     options.enter().append("option").text(function(d) { return d.sector; });
-
-    // create randomized timestamp for this category data item
-    //var now = new Date(new Date().getTime() + (Math.random() - 0.5) * 1000);
-    var now = new Date(d["harvested_at"]);
-    let entities = d.entities.map(function(entity){ return entity["sector"]});
-
-    // create new data item for each artile and each entity
-    entities.forEach(function(entity){
-
-      if(chart.yDomain().indexOf(entity)==-1){
-
-        yArr.push(entity);
-        chart.yDomain(yArr);
-
-      }
-     var value = parseFloat(JSON.parse(storySaturation).saturation[0][d["story_saturation"]]);
-      var obj = {
-        time: now,
-        color: color(chart.yDomain().indexOf(entity)),
-        category: entity,
-        type: "circle",
-        size: (Math.round(0.8 * 12)),
-        full: d
-      };
-
-      // display the data item onto chart
-      chart.datum(obj);
+    // event handler for debug checkbox
+    d3.select("#debug").on("change", function() {
+      var state = d3.select(this).property("checked")
+      chart.debug(state);
     })
-  }
-}
 
-var url = "https://raw.githubusercontent.com/Geminiii/d3labs/master/accern_response.json";
-
-//var url = "https://raw.githubusercontent.com/zhuwhr/streaming-data-visualization/master/parsed.json";
-
-
-// 
-var findOne = function (haystack, arr) {
-    return arr.some(function (v) {
-        return haystack.indexOf(v) >= 0;
-    });
-};
-
-function render(data){
-  // filtered out articles not related to companies interested in
-  var filteredData = data.filter(function(d) {
-    // find the 
-    var entityTikers = d.entities.map(function(entity){ return entity["sector"]});
-    return findOne(entityTikers, chart.yDomain());
-  });
-  // display articles onto the cloudlines
-  //cloudLines(filteredData);
-};
-
-// read the data file
-d3.json(url, function (error, response) {
-  if(error) console.log(error);
-  //render(response);
-    //cloudLines(response);
-});
-
-$(document).ready(function() {
-            var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + '/articles');
-
-            socket.on('connect', function() {
-                socket.emit('get_top_articles', {data: 'I\'m connected!'});
-            });
-
-            socket.on('my_response', function(msg) {
-                //$('#data').append('<br>' + $('<div/>').text('Articles Received:' + msg.data).html());
-                cloudLines(msg.data);
-            });
-});
-
-function realTimeChartMulti() {   
-    
-  var version = "0.1.0",
-      datum, data,
-      maxSeconds = 300, pixelsPerSecond = 10,
-      svgWidth = 700, svgHeight = 300,
-      margin = { top: 20, bottom: 20, left:10, right: 110, topNav: 10, bottomNav: 20 },
-      dimension = { chartTitle: 20, xAxis: 20, yAxis: 20, xTitle: 20, yTitle: 20, navChart: 70 },
-      maxY = 100, minY = 0,
-      chartTitle, yTitle, xTitle,
-      drawXAxis = true, drawYAxis = true, drawNavChart = true,
-      border,
-      selection,
-      barId = 0,
-      yDomain = [],
-      debug = false,
-      barWidth = 5,
-      halted = false,
-      x, y,
-      xNav, yNav,
-      width, height,
-      widthNav, heightNav,
-      xAxisG, yAxisG,
-      xAxis, yAxis,
-      svg;
-
-  
-  var chartInnerHeight = svgHeight - margin.top - margin.bottom;
-  var chartInnerWidth = svgWidth - margin.left - margin.right;
-  // create the chart
-  var chart = function(s) {
-    selection = s;
-    if (selection == undefined) {
-      console.error("selection is undefined");
-      return;
-    };
-
-    // process titles
-    chartTitle = chartTitle || "";
-    xTitle = xTitle || "";
-    yTitle = yTitle || "";
-
-    // compute component dimensions
-    var chartTitleDim = chartTitle == "" ? 0 : dimension.chartTitle,
-        xTitleDim = xTitle == "" ? 0 : dimension.xTitle,
-        yTitleDim = yTitle == "" ? 0 : dimension.yTitle,
-        xAxisDim = !drawXAxis ? 0 : dimension.xAxis,
-        yAxisDim = !drawYAxis ? 0 : dimension.yAxis,
-        navChartDim = !drawNavChart ? 0 : dimension.navChart;
-
-    // compute dimension of main and nav charts, and offsets
-    var marginTop = margin.top + chartTitleDim;
-    height = svgHeight - marginTop - margin.bottom - chartTitleDim - xTitleDim - xAxisDim - navChartDim + 30;
-    heightNav = navChartDim - margin.topNav - margin.bottomNav;
-    var marginTopNav = svgHeight - margin.bottom - heightNav - margin.topNav;
-    width = svgWidth - margin.left - margin.right;
-    widthNav = width;
-
-    // append the svg
-    svg = selection.append("svg")
-        .attr("width", svgWidth)
-        .attr("height", svgHeight)
-        .style("border", function(d) {
-          if (border) return "1px solid lightgray";
-          else return null;
-        });
-
-    // create main group and translate
-    var main = svg.append("g")
-        .attr("transform", "translate (" + margin.left + "," + marginTop + ")");
-
-    // define clip-path
-    main.append("defs").append("clipPath")
-        .data(yArr)
-        .attr("class","line")
-        .attr("d",line)
-        .attr("id", "myClip")
-      .append("rect")
-        .attr("x", 0)
-        .attr("y", 0)
-        .attr("width", width)
-        .attr("height", height);
-
-    // create chart background
-    main.append("rect")
-        .data(yArr)
-        .attr("class","line")
-        .attr("d",line)
-        .attr("x", 0)
-        .attr("y", 0)
-        .attr("width", width)
-        .attr("height", height)
-        .style("fill", "#f5f5f5")
+    // event handler for halt checkbox
+    d3.select("#halt").on("change", function() {
+      var state = d3.select(this).property("checked")
+      chart.halt(state);
+    })
 
 
-    // note that two groups are created here, the latter assigned to barG;
-    // the former will contain a clip path to constrain objects to the chart area;
-    // no equivalent clip path is created for the nav chart as the data itself
-    // is clipped to the full time domain
-    var barG = main.append("g")
-        .attr("class", "barGroup")
-        .attr("transform", "translate(0, 0)")
-        .attr("clip-path", "url(#myClip")
-      .append("g");
+    // configure the data generator
 
-    // add group for x axis
-    xAxisG = main.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")");
+    // mean and deviation for generation of time intervals
+    var tX = 5; // time constant, multiple of one second
+    var meanMs = 1000 * tX, // milliseconds
+        dev = 200 * tX; // std dev
 
-    // add group for y axis
-    yAxisG = main.append("g")
-        .attr("class", "y axis")
-        .attr("transform", "translate(" + width + " ,0)")
+    // define time scale
+    var timeScale = d3.scale.linear()
+        .domain([300 * tX, 1700 * tX])
+        .range([300 * tX, 1700 * tX])
+        .clamp(true);
 
+    // define function that returns normally distributed random numbers
+    var normal = d3.random.normal(meanMs, dev);
 
-    // in x axis group, add x axis title
-    xAxisG.append("text")
-        .attr("class", "title")
-        .attr("x", width / 2)
-        .attr("y", 25)
-        .attr("dy", ".71em")
-        .text(function(d) {
-          var text = xTitle == undefined ? "" : xTitle;
-          return text;
-        });
-
-    // in y axis group, add y axis title
-    yAxisG.append("text")
-        .attr("class", "title")
-        .attr("transform", "rotate(-90)")
-        .attr("x", -height / 2)
-        .attr("y", -margin.left + 100) //-35
-        .attr("dy", ".71em")
-        .text(function(d) {
-          var text = yTitle == undefined ? "" : yTitle;
-          return text;
-        });
-      
-      //yash
-//    yAxisG.append("line")
-//          .attr("x1", -height/2)
-//          .attr("y1", -margin.left+70)
-//          .attr("x2", 0)
-//          .attr("y2", -margin.left+70)
-//          .attr("stroke-width", 2)
-//          .attr("stroke", "black");
+    // define color scale
+    var color = d3.scale.category10();
 
 
-    // in main group, add chart title
-    main.append("text")
-        .attr("class", "chartTitle")
-        .attr("x", width / 2)
-        .attr("y", -20)
-        .attr("dy", ".71em")
-        .text(function(d) {
-          var text = chartTitle == undefined ? "" : chartTitle;
-          return text;
-        });
+    // convert objects into cloudlines items and display
+    var cloudLines = function (data){
+      console.log(data.length+":"+JSON.stringify(data));
 
-    // define main chart scales
-    x = d3.time.scale().range([0, width]);
-    y = d3.scale.ordinal().domain(yDomain).rangeRoundPoints([height, 0], 1)
-    //console.log(yArr)
+        for(var i=0; i<data.length;i++){
 
-    var line = d3.svg.line()
-    .x(function(d) { return x(d.x); })
-    .y(function(d) { return y(d.y); });
+            var d = data[i]._source;
+             
+            var now = new Date(d["harvested_at"]);
+            let entities = d.entities.map(function(entity){ return entity["sector"]});
 
-      //yash
-    main.selectAll("line.y")
-  .data(yArr)
-  .enter().append("line")
-  .attr("class", "y")
-  .attr("x1", 0)
-  .attr("x2", 450)
-  .attr("y1", yArr)
-  .attr("y2", yArr)
-  .style("stroke", "#ccc");
+            // create new data item for each artile and each entity
+            entities.forEach(function(entity){
 
+                if(chart.yDomain().indexOf(entity)==-1){
 
-    // define main chart axis
-    xAxis = d3.svg.axis().orient("bottom");
-    yAxis = d3.svg.axis().tickSize(-svgWidth).scale(y).orient("right");
+                    yArr.push(entity);
+                    chart.yDomain(yArr);
 
+                }
+                var value = parseFloat(JSON.parse(storySaturation).saturation[0][d["story_saturation"]]);
+                var obj = {
+                    time: now,
+                    color: color(chart.yDomain().indexOf(entity)),
+                    category: entity,
+                    type: "circle",
+                    size: (Math.round(12)),
+                    full: d
+                };
 
-
-    // add nav chart
-    var nav = svg.append("g")
-        .attr("transform", "translate (" + margin.left + "," + marginTopNav + ")");
-
-    // add nav background
-    nav.append("rect")
-        .attr("x", 0)
-        .attr("y", 0)
-        .attr("width", width)
-        .attr("height", heightNav)
-        .style("fill", "#F5F5F5")
-        .style("shape-rendering", "crispEdges")
-        .attr("transform", "translate(0, 0)");
-
-    // add group to data items
-    var navG = nav.append("g")
-        .attr("class", "nav");
-
-    // add group to hold nav x axis
-    // please note that a clip path has yet to be added here (tbd)
-    var xAxisGNav = nav.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + heightNav + ")");
-
-    // define nav chart scales
-    xNav = d3.time.scale().range([0, widthNav]);
-    yNav = d3.scale.ordinal().domain(yDomain).rangeRoundPoints([heightNav, 0], 1)
-
-    // define nav axis
-    var xAxisNav = d3.svg.axis().orient("bottom");
-
-    // compute initial time domains...
-    var ts = new Date("2016-11-09 05:51:10 UTC").getTime();
-
-    // first, the full time domain
-    //var endTime = new Date(ts);
-    var endTime = new Date();
-    endTime.setDate(endTime.getDate() + 1);
-    console.log(endTime)
-    var startTime = new Date(endTime.getTime() - maxSeconds * 500000);
-    console.log(startTime)
-    var interval = endTime.getTime() - startTime.getTime()*30000;
-    console.log(interval)
-
-    // then the viewport time domain (what's visible in the main chart and the viewport in the nav chart)
-    var endTimeViewport = new Date();
-    endTimeViewport.setDate(endTimeViewport.getDate() + 1);
-    //var endTimeViewport = new Date(ts);
-    var startTimeViewport = new Date(endTime.getTime() - width / pixelsPerSecond * 3900);
-    var intervalViewport = endTimeViewport.getTime() - startTimeViewport.getTime();
-    var offsetViewport = startTimeViewport.getTime() - startTime.getTime();
-
-    // set the scale domains for main and nav charts
-    x.domain([startTimeViewport, endTimeViewport]);
-    xNav.domain([startTime, endTime]);
-
-    // update axis with modified scale
-    xAxis.scale(x)(xAxisG);
-    yAxis.scale(y)(yAxisG);
-
-    xAxisNav.scale(xNav)(xAxisGNav);
-
-    // create brush (moveable, changable rectangle that determines the time domain of main chart)
-    var viewport = d3.svg.brush()
-        .x(xNav)
-        .extent([startTimeViewport, endTimeViewport])
-        .on("brush", function () {
-          // get the current time extent of viewport
-          var extent = viewport.extent();
-          startTimeViewport = extent[0];
-          endTimeViewport = extent[1];
-
-          // compute viewport extent in milliseconds
-          intervalViewport = endTimeViewport.getTime() - startTimeViewport.getTime();
-          offsetViewport = startTimeViewport.getTime() - startTime.getTime();
-
-          // handle invisible viewport
-          if (intervalViewport == 0) {
-            intervalViewport = maxSeconds * 30000;
-            offsetViewport = 0;
-          }
-
-          // update the x domain of the main chart
-          x.domain(viewport.empty() ? xNav.domain() : extent);
-
-          // update the x axis of the main chart
-          xAxis.scale(x)(xAxisG);
-
-          // update display
-          refresh();
-        });
-
-    // create group and assign to brush
-    var viewportG = nav.append("g")
-        .attr("class", "viewport")
-        .call(viewport)
-        .selectAll("rect")
-        .attr("height", heightNav);
-
-    // initial invocation; update display
-    data = [];
-    refresh();
-
-    // function to refresh the viz upon changes of the time domain
-    // (which happens constantly), or after arrival of new data, or at init
-    function refresh() {
-
-      // process data to remove too late data items
-      data = data.filter(function(d) {
-        if (d.time.getTime() > startTime.getTime()) return true;
-      })
-
-      // determine number of categories
-      var categoryCount = yDomain.length;
-      if (debug) console.log("yDomain", yDomain)
-
-      // here we bind the new data to the main chart
-      // note: no key function is used here; therefore the data binding is
-      // by index, which effectivly means that available DOM elements
-      // are associated with each item in the available data array, from
-      // first to last index; if the new data array contains fewer elements
-      // than the existing DOM elements, the LAST DOM elements are removed;
-      // basically, for each step, the data items "walks" leftward (each data
-      // item occupying the next DOM element to the left);
-      // This data binding is very different from one that is done with a key
-      // function; in such a case, a data item stays "resident" in the DOM
-      // element, and such DOM element (with data) would be moved left, until
-      // the x position is to the left of the chart, where the item would be
-      // exited
-      var updateSel = barG.selectAll(".bar")
-          .data(data);
-
-      // remove items
-      updateSel.exit().remove();
-
-      // add items
-      updateSel.enter()
-          .append(function(d) {
-            if (debug) { console.log("d", JSON.stringify(d)); }
-            if (d.type == undefined) console.error(JSON.stringify(d))
-            var type = d.type || "circle";
-            var node = document.createElementNS("http://www.w3.org/2000/svg", type);
-            return node;
-          })
-          .attr("class", "bar")
-          .attr("id", function() {
-            return "bar-" + barId++;
-          })
-          .on("click", (d, i) => {
-            let info = [d.full.entities[0].name, d.full.entities[0].ticker, d.full.entities[0].region, d.full.entities[0].sector]
-            d3.select("#tooltip")
-              .text('')
-              .style({
-                visibility: "visible",
-                top: d3.event.clientY + 'px',
-                left: d3.event.clientX + 'px'
+                  // display the data item onto chart
+                chart.datum(obj);
+                
             })
-              .selectAll('p')
-              .data(info)
-              .enter()
-                .append('p')
-                .text(d => d)
-          })
-          .on("mouseenter", function(d, i) {
-            d3.selectAll("circle")
-	                   .style("stroke", undefined);
-            let info = [d.full.entities[0].name];
-            d3.select("#tooltip").style({
-                        visibility: "visible",
-                        top: d3.event.clientY + 5 + "px",
-                        left: d3.event.clientX + 10 + "px",
-                        opacity: 1
-                    })
-                    .data(info)
-                    .text(d => d);
-            d3.select(this).style("stroke", function(d, i) {
-                return "black";
-            });
-            
-          })
-          .on("mouseleave", function(d,i) {
-                    d3.selectAll("circle")
-	                   .style("stroke", undefined);
-                    d3.select("#tooltip").style({
-                        visibility: "hidden",
-                        opacity: 0
+      }
+    }
+
+
+    $(document).ready(function() {
+                var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + '/articles');
+
+                socket.on('connect', function() {
+                    socket.emit('get_top_articles', {data: 'I\'m connected!'});
+                });
+
+                socket.on('my_response', function(msg) {
+                    //$('#data').append('<br>' + $('<div/>').text('Articles Received:' + msg.data).html());
+                    cloudLines(msg.data);
+                });
+    });
+
+    function realTimeChartMulti() {   
+
+      var version = "0.1.0",
+          datum, data,
+          maxSeconds = 300, pixelsPerSecond = 10,
+          svgWidth = 900, svgHeight = 400,
+          margin = { top: 20, bottom: 20, left:30, right: 150, topNav: 10, bottomNav: 20 },
+          dimension = { chartTitle: 20, xAxis: 20, yAxis: 20, xTitle: 20, yTitle: 20, navChart: 70 },
+          maxY = 100, minY = 0,
+          chartTitle, yTitle, xTitle,
+          drawXAxis = true, drawYAxis = true, drawNavChart = true,
+          border,
+          selection,
+          barId = 0,
+          yDomain = [],
+          debug = false,
+          barWidth = 5,
+          halted = false,
+          x, y,
+          xNav, yNav,
+          width, height,
+          widthNav, heightNav,
+          xAxisG, yAxisG,
+          xAxis, yAxis,
+          svg;
+
+
+      var chartInnerHeight = svgHeight - margin.top - margin.bottom;
+      var chartInnerWidth = svgWidth - margin.left - margin.right;
+      // create the chart
+      var chart = function(s) {
+                selection = s;
+                if (selection == undefined) {
+                  console.error("selection is undefined");
+                  return;
+                };
+
+                // process titles
+                chartTitle = chartTitle || "";
+                xTitle = xTitle || "";
+                yTitle = yTitle || "";
+
+                // compute component dimensions
+                var chartTitleDim = chartTitle == "" ? 0 : dimension.chartTitle,
+                    xTitleDim = xTitle == "" ? 0 : dimension.xTitle,
+                    yTitleDim = yTitle == "" ? 0 : dimension.yTitle,
+                    xAxisDim = !drawXAxis ? 0 : dimension.xAxis,
+                    yAxisDim = !drawYAxis ? 0 : dimension.yAxis,
+                    navChartDim = !drawNavChart ? 0 : dimension.navChart;
+
+                // compute dimension of main and nav charts, and offsets
+                var marginTop = margin.top + chartTitleDim;
+                height = svgHeight - marginTop - margin.bottom - chartTitleDim - xTitleDim - xAxisDim - navChartDim + 30;
+                heightNav = navChartDim - margin.topNav - margin.bottomNav;
+                var marginTopNav = svgHeight - margin.bottom - heightNav - margin.topNav;
+                width = svgWidth - margin.left - margin.right - 10;
+                widthNav = width;
+
+                // append the svg
+                svg = selection.append("svg")
+                    .attr("width", svgWidth)
+                    .attr("height", svgHeight)
+                    .style("border", function(d) {
+                      if (border) return "1px solid lightgray";
+                      else return null;
                     });
-          });
 
-      // update items; added items are now part of the update selection
+                // create main group and translate
+                var main = svg.append("g")
+                    .attr("transform", "translate (" + margin.left + "," + margin.top + ")");
 
-      updateSel
-          .attr("x", function(d) {
-            var retVal = null;
-            switch (getTagName(this)) {
-              case "rect":
-                var size = d.size || 6;
-                retVal = Math.round(x(d.time) - size / 2);
-                break;
-              default:
-            }
-            return retVal;
-          })
-          .attr("y", function(d) {
-            var retVal = null;
-            switch (getTagName(this)) {
-              case "rect":
-                var size = d.size || 6;
-                retVal = y(d.category) - size / 2;
-                break;
-              default:
-            }
-            return retVal;
-          })
-          .attr("cx", function(d) {
-            var retVal = null;
-            switch (getTagName(this)) {
-              case "circle":
-                retVal = Number(Math.round(x(d.time)));
-                break;
-              default:
-            }
-            return retVal;
-          })
-          .attr("cy", function(d) {
-            var retVal = null;
-            switch (getTagName(this)) {
-              case "circle":
-                retVal = y(d.category);
-                break;
-              default:
-            }
-            return retVal;
-          })
-          .attr("r", function(d) {
-            var retVal = null;
-            switch (getTagName(this)) {
-              case "circle":
-                retVal = Number(d.size) / 2;
-                break;
-              default:
-            }
-            return Number(retVal);
-          })
-          .attr("width", function(d) {
-            var retVal = null;
-            switch (getTagName(this)) {
-              case "rect":
-                retVal = d.size;
-                break;
-              default:
-            }
-            return retVal;
-          })
-          .attr("height", function(d) {
-            var retVal = null;
-            switch (getTagName(this)) {
-              case "rect":
-                retVal = Number(d.size);
-                break;
-              default:
-            }
+                // define clip-path
+               /* main.append("defs").append("clipPath")
+                    .data(yArr)
+                    .attr("class","line")
+                    .attr("d",line)
+                    .attr("id", "myClip")
+                .style("fill", "#000")
+                  .append("rect")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("width", width)
+                    .attr("height", height);*/
+          
 
-            return retVal;
-          })
-          .style("fill", function(d) { return d.color || "black"; })
-          //.style("stroke", "orange")
-          //.style("stroke-width", "1px")
-          //.style("stroke-opacity", 0.8)
-          .style("fill-opacity", function(d) { return 0.2 || 1; });
-         //yash balar
+                // create chart background
+                main.append("rect")
+                    .data(yArr)
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("width", width)
+                    .attr("height", height)
+                    .style("fill", "#f5f5f5")
 
 
-      // create update selection for the nav chart, by applying data
-      var updateSelNav = navG.selectAll("circle")
-          .data(data);
+                // note that two groups are created here, the latter assigned to barG;
+                // the former will contain a clip path to constrain objects to the chart area;
+                // no equivalent clip path is created for the nav chart as the data itself
+                // is clipped to the full time domain
+                var barG = main.append("g")
+                    .attr("class", "barGroup")
+                    .attr("transform", "translate(0, 0)")
+                    .attr("clip-path", "url(#myClip");
+
+                // add group for x axis
+                xAxisG = main.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform", "translate(0," + (height) + ")");
+
+                // add group for y axis
+                yAxisG = main.append("g")
+                    .attr("class", "y axis")
+                    .attr("transform", "translate(" + width + " ,0)");
 
 
-      // remove items
-      updateSelNav.exit().remove();
-
-      // add items
-      updateSelNav.enter().append("circle")
-          .attr("r", 1)
-          .attr("fill", "black")
-
-      // added items now part of update selection; set coordinates of points
-      updateSelNav
-          .attr("cx", function(d) {
-            return Math.round(xNav(d.time));
-          })
-          .attr("cy", function(d) {
-            return yNav(d.category);
-          })
-
-    } // end refreshChart function
+                // in x axis group, add x axis title
+                xAxisG.append("text")
+                    .attr("class", "title")
+                    //.attr("x", width / 2)
+                    .attr("x", 0)
+                    .attr("y", 25)
+                    .attr("dy", ".71em")
+                    .text(function(d) {
+                      var text = xTitle == undefined ? "" : xTitle;
+                      return text;
+                    });
 
 
-    function getTagName(that) {
-      var tagName = d3.select(that).node().tagName;
-      return (tagName);
-    }
+
+                // in y axis group, add y axis title
+                yAxisG.append("text")
+                    .attr("class", "title")
+                    .attr("transform", "translate(" + (-margin.right+150) + ", " + (-margin.top / 3 - 10) + ")")
+                  //  .attr("transform", "rotate(-90)")
+                    //.attr("x", -height / 2)
+                    //.attr("y", -margin.left +170) //-35
+                    .attr("dy", ".71em")
+                    .text(function(d) {
+                      var text = yTitle == undefined ? "" : yTitle;
+                      return text;
+                    });
 
 
-    // function to keep the chart "moving" through time (right to left)
-    setInterval(function() {
+                // define main chart scales
+                x = d3.time.scale().range([0, width]);
+                y = d3.scale.ordinal().domain(yDomain).rangeRoundPoints([height, 0], 1)
+                //console.log(yArr)
 
-      if (halted) return;
-
-      // get current viewport extent
-      var extent = viewport.empty() ? xNav.domain() : viewport.extent();
-      var interval = extent[1].getTime() - extent[0].getTime();
-      var offset = extent[0].getTime() - xNav.domain()[0].getTime();
-
-      // compute new nav extents
-      endTime = new Date();
-      endTime.setDate(endTime.getDate() + 1);
-      //console.log(endTime)
-      startTime = new Date(endTime.getTime() - maxSeconds * 500000);
-      //console.log(startTime)
-
-      // compute new viewport extents
-      startTimeViewport = new Date(startTime.getTime() + offset);
-      endTimeViewport = new Date(startTimeViewport.getTime() + interval);
-      viewport.extent([startTimeViewport, endTimeViewport])
-
-      // update scales
-      x.domain([startTimeViewport, endTimeViewport]);
-      xNav.domain([startTime, endTime]);
-
-      // update axis
-      xAxis.scale(x)(xAxisG);
-      xAxisNav.scale(xNav)(xAxisGNav);
-
-      // refresh svg
-      refresh();
-
-    }, 200)
-
-    // end setInterval function
-
-    return chart;
-
-  } // end chart function
+                var line = d3.svg.line()
+                .x(function(d) { return x(d.x); })
+                .y(function(d) { return y(d.y); });
 
 
-  // chart getters/setters
+                // define main chart axis
+                xAxis = d3.svg.axis().orient("bottom");
+                yAxis = d3.svg.axis().tickSize(-width).orient("right");
 
-  // new data item (this most recent item will appear
-  // on the right side of the chart, and begin moving left)
-  chart.datum = function(_) {
-    if (arguments.length == 0) return datum;
-    datum = _;
-    data.push(datum);
+                // add nav chart
+                var nav = svg.append("g")
+                    .attr("transform", "translate (" + margin.left + "," + marginTopNav + ")");
 
-    return chart;
-  }
+                // add nav background
+                nav.append("rect")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("width", width)
+                    .attr("height", heightNav)
+                    .style("fill", "#F5F5F5")
+                    .style("shape-rendering", "crispEdges")
+                    .attr("transform", "translate(0, 0)");
 
-  // svg width
-  chart.width = function(_) {
-    if (arguments.length == 0) return svgWidth;
-    svgWidth = _;
-    return chart;
-  }
+                // add group to data items
+                var navG = nav.append("g")
+                    .attr("class", "nav");
 
-  // svg height
-  chart.height = function(_) {
-    if (arguments.length == 0) return svgHeight;
-    svgHeight = _;
-    return chart;
-  }
+                // add group to hold nav x axis
+                // please note that a clip path has yet to be added here (tbd)
+                var xAxisGNav = nav.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform", "translate(0," + heightNav + ")");
 
-  // svg border
-  chart.border = function(_) {
-    if (arguments.length == 0) return border;
-    border = _;
-    return chart;
-  }
+                // define nav chart scales
+                xNav = d3.time.scale().range([0, widthNav]);
+                yNav = d3.scale.ordinal().domain(yDomain).rangeRoundPoints([heightNav, 0], 1)
 
-  // chart title
-  chart.title = function(_) {
-    if (arguments.length == 0) return chartTitle;
-    chartTitle = _;
-    return chart;
-  }
+                // define nav axis
+                var xAxisNav = d3.svg.axis().orient("bottom");
 
-  // x axis title
-  chart.xTitle = function(_) {
-    if (arguments.length == 0) return xTitle;
-    xTitle = _;
-    return chart;
-  }
+                // first, the full time domain
+                //var endTime = new Date(ts);
+                var endTime = new Date();
+                console.log(endTime)
+                var startTime = new Date();
+                startTime.setDate(endTime.getDate()-1);
+                console.log(startTime)
+                var interval = endTime.getTime() - startTime.getTime()*30000;
+                console.log(interval)
 
-  // y axis title
-  chart.yTitle = function(_) {
-    if (arguments.length == 0) return yTitle;
-    yTitle = _;
-    return chart;
-  }
+                // then the viewport time domain (what's visible in the main chart and the viewport in the nav chart)
+                var endTimeViewport = new Date();
+                //var endTimeViewport = new Date(ts);
+                var startTimeViewport = new Date(endTime.getTime() - width / pixelsPerSecond * 70000);
+                var intervalViewport = endTimeViewport.getTime() - startTimeViewport.getTime();
+                var offsetViewport = startTimeViewport.getTime() - startTime.getTime();
 
-  // yItems (can be dynamically added after chart construction)
-  chart.yDomain = function(_) {
-    if (arguments.length == 0) return yDomain;
-    yDomain = _;
-    if (svg) {
-      // update the y ordinal scale
-      y = d3.scale.ordinal().domain(yDomain).rangeRoundPoints([height, 0], 1);
-      // update the y axis
-      yAxis.scale(y)(yAxisG);
-      // update the y ordinal scale for the nav chart
-      yNav = d3.scale.ordinal().domain(yDomain).rangeRoundPoints([heightNav, 0], 1);
+                // set the scale domains for main and nav charts
+                x.domain([startTimeViewport, endTimeViewport]);
+                xNav.domain([startTime, endTime]);
 
-    }
-    return chart;
-  }
+                // update axis with modified scale
+                xAxis.scale(x)(xAxisG);
+                yAxis.scale(y)(yAxisG);
 
-  // debug
-  chart.debug = function(_) {
-    if (arguments.length == 0) return debug;
-    debug = _;
-    return chart;
-  }
+                xAxisNav.scale(xNav)(xAxisGNav);
 
-  // halt
-  chart.halt = function(_) {
-    if (arguments.length == 0) return halted;
-    halted = _;
-    return chart;
-  }
+                // create brush (moveable, changable rectangle that determines the time domain of main chart)
+                var viewport = d3.svg.brush()
+                    .x(xNav)
+                    .extent([startTimeViewport, endTimeViewport])
+                    .on("brush", function () {
+                      // get the current time extent of viewport
+                      var extent = viewport.extent();
+                      startTimeViewport = extent[0];
+                      endTimeViewport = extent[1];
 
-  // version
-  chart.version = version;
+                      // compute viewport extent in milliseconds
+                      intervalViewport = endTimeViewport.getTime() - startTimeViewport.getTime();
+                      offsetViewport = startTimeViewport.getTime() - startTime.getTime();
 
-  return chart;
+                      // handle invisible viewport
+                      if (intervalViewport == 0) {
+                        intervalViewport = maxSeconds * 30000;
+                        offsetViewport = 0;
+                      }
 
-} // end realTimeChart function
+                      // update the x domain of the main chart
+                      x.domain(viewport.empty() ? xNav.domain() : extent);
+
+                      // update the x axis of the main chart
+                      xAxis.scale(x)(xAxisG);
+
+                      // update display
+                      refresh();
+                    });
+
+                // create group and assign to brush
+                var viewportG = nav.append("g")
+                    .attr("class", "viewport")
+                    .call(viewport)
+                    .selectAll("rect")
+                    .attr("height", heightNav);
+
+                // initial invocation; update display
+                data = [];
+                refresh();
+
+                // function to refresh the viz upon changes of the time domain
+                // (which happens constantly), or after arrival of new data, or at init
+                function refresh() {
+
+                  // process data to remove too late data items
+                  data = data.filter(function(d) {
+                    if (d.time.getTime() > startTime.getTime()) return true;
+                  })
+
+                  // determine number of categories
+                  var categoryCount = yDomain.length;
+                  if (debug) console.log("yDomain", yDomain)
+
+                  // here we bind the new data to the main chart
+                  // note: no key function is used here; therefore the data binding is
+                  // by index, which effectivly means that available DOM elements
+                  // are associated with each item in the available data array, from
+                  // first to last index; if the new data array contains fewer elements
+                  // than the existing DOM elements, the LAST DOM elements are removed;
+                  // basically, for each step, the data items "walks" leftward (each data
+                  // item occupying the next DOM element to the left);
+                  // This data binding is very different from one that is done with a key
+                  // function; in such a case, a data item stays "resident" in the DOM
+                  // element, and such DOM element (with data) would be moved left, until
+                  // the x position is to the left of the chart, where the item would be
+                  // exited
+                  var updateSel = barG.selectAll(".bar")
+                      .data(data);
+
+                  // remove items
+                  updateSel.exit().remove();
+
+                  // add items
+                  updateSel.enter()
+                      .append(function(d) {
+                        if (debug) { console.log("d", JSON.stringify(d)); }
+                        if (d.type == undefined) console.error(JSON.stringify(d))
+                        var type = d.type || "circle";
+                        var node = document.createElementNS("http://www.w3.org/2000/svg", type);
+                        return node;
+                      })
+                      .attr("class", "bar")
+                      .attr("id", function() {
+                        return "bar-" + barId++;
+                      })
+                      .on("click", (d, i) => {
+                        let info = [d.full.entities[0].name, d.full.entities[0].ticker, d.full.entities[0].region, d.full.entities[0].sector]
+                        d3.select("#tooltip")
+                          .text('')
+                          .style({
+                            visibility: "visible",
+                            top: d3.event.clientY + 'px',
+                            left: d3.event.clientX + 'px'
+                        })
+                          .selectAll('p')
+                          .data(info)
+                          .enter()
+                            .append('p')
+                            .text(d => d)
+                      })
+                      .on("mouseenter", function(d, i) {
+                        d3.selectAll("circle")
+                                   .style("stroke", undefined);
+                        let info = [d.full.entities[0].name];
+                        d3.select("#tooltip").style({
+                                    visibility: "visible",
+                                    top: d3.event.clientY + 5 + "px",
+                                    left: d3.event.clientX + 10 + "px",
+                                    opacity: 1
+                                })
+                                .data(info)
+                                .text(d => d);
+                        d3.select(this).style("stroke", function(d, i) {
+                            return "black";
+                        });
+
+                      })
+                      .on("mouseleave", function(d,i) {
+                                d3.selectAll("circle")
+                                   .style("stroke", undefined);
+                                d3.select("#tooltip").style({
+                                    visibility: "hidden",
+                                    opacity: 0
+                                });
+                      });
+                  d3.selectAll('.y .tick')
+                    .data(data)
+                    .on('mouseover', function(d, i) {
+                        d3.select(this).style("stroke", function(d, i) {
+                            return "black";
+                        });
+
+                      })
+                    .on("mouseleave", function(d,i) {
+                                d3.select(this)
+                                   .style("stroke", undefined);
+                      });
+
+                  // update items; added items are now part of the update selection
+
+                  updateSel
+                      .attr("x", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "rect":
+                            var size = d.size || 6;
+                            retVal = Math.round(x(d.time) - size / 2);
+                            break;
+                          default:
+                        }
+                        return retVal;
+                      })
+                      .attr("y", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "rect":
+                            var size = d.size || 6;
+                            retVal = y(d.category) - size / 2;
+                            break;
+                          default:
+                        }
+                        return retVal;
+                      })
+                      .attr("cx", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "circle":
+                            retVal = Number(Math.round(x(d.time)));
+                            break;
+                          default:
+                        }
+                        return retVal;
+                      })
+                      .attr("cy", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "circle":
+                            retVal = y(d.category);
+                            break;
+                          default:
+                        }
+                        return retVal;
+                      })
+                      .attr("r", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "circle":
+                            retVal = Number(d.size) / 2;
+                            break;
+                          default:
+                        }
+                        return Number(retVal);
+                      })
+                      .attr("width", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "rect":
+                            retVal = d.size;
+                            break;
+                          default:
+                        }
+                        return retVal;
+                      })
+                      .attr("height", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "rect":
+                            retVal = Number(d.size);
+                            break;
+                          default:
+                        }
+
+                        return retVal;
+                      })
+                      .style("fill", function(d) { return d.color || "black"; })
+                      //.style("stroke", "orange")
+                      //.style("stroke-width", "1px")
+                      //.style("stroke-opacity", 0.8)
+                      .style("fill-opacity", function(d) { return 0.2 || 1; });
+                     //yash balar
 
 
-</script>
-</body>
-</html>
+                  // create update selection for the nav chart, by applying data
+                  var updateSelNav = navG.selectAll("circle")
+                      .data(data);
+
+
+                  // remove items
+                  updateSelNav.exit().remove();
+
+                  // add items
+                  updateSelNav.enter().append("circle")
+                      .attr("r", 1)
+                      .attr("fill", "black")
+
+                  // added items now part of update selection; set coordinates of points
+                  updateSelNav
+                      .attr("cx", function(d) {
+                        return Math.round(xNav(d.time));
+                      })
+                      .attr("cy", function(d) {
+                        return yNav(d.category);
+                      })
+
+                } // end refreshChart function
+
+
+                function getTagName(that) {
+                  var tagName = d3.select(that).node().tagName;
+                  return (tagName);
+                }
+
+
+                // function to keep the chart "moving" through time (right to left)
+                setInterval(function() {
+
+                  if (halted) return;
+
+                  // get current viewport extent
+                  var extent = viewport.empty() ? xNav.domain() : viewport.extent();
+                  var interval = extent[1].getTime() - extent[0].getTime();
+                  var offset = extent[0].getTime() - xNav.domain()[0].getTime();
+
+                  // compute new nav extents
+                  endTime = new Date();
+                  //console.log(endTime)
+                  startTime = new Date();
+                  startTime.setDate(endTime.getDate() - 1);
+                  //console.log(startTime)
+
+                  // compute new viewport extents
+                  startTimeViewport = new Date(startTime.getTime() + offset);
+                  endTimeViewport = new Date(startTimeViewport.getTime() + interval);
+                  viewport.extent([startTimeViewport, endTimeViewport])
+
+                  // update scales
+                  x.domain([startTimeViewport, endTimeViewport]);
+                  xNav.domain([startTime, endTime]);
+
+                  // update axis
+                  xAxis.scale(x)(xAxisG);
+                  xAxisNav.scale(xNav)(xAxisGNav);
+
+                  // refresh svg
+                  refresh();
+
+                }, 200)
+
+                // end setInterval function
+
+                return chart;
+
+      } // end chart function
+
+
+      // chart getters/setters
+
+      // new data item (this most recent item will appear
+      // on the right side of the chart, and begin moving left)
+      chart.datum = function(_) {
+        if (arguments.length == 0) return datum;
+        datum = _;
+        data.push(datum);
+
+        return chart;
+      }
+
+      // svg width
+      chart.width = function(_) {
+        if (arguments.length == 0) return svgWidth;
+        svgWidth = _;
+        return chart;
+      }
+
+      // svg height
+      chart.height = function(_) {
+        if (arguments.length == 0) return svgHeight;
+        svgHeight = _;
+        return chart;
+      }
+
+      // svg border
+      chart.border = function(_) {
+        if (arguments.length == 0) return border;
+        border = _;
+        return chart;
+      }
+
+      // chart title
+      chart.title = function(_) {
+        if (arguments.length == 0) return chartTitle;
+        chartTitle = _;
+        return chart;
+      }
+
+      // x axis title
+      chart.xTitle = function(_) {
+        if (arguments.length == 0) return xTitle;
+        xTitle = _;
+        return chart;
+      }
+
+      // y axis title
+      chart.yTitle = function(_) {
+        if (arguments.length == 0) return yTitle;
+        yTitle = _;
+        return chart;
+      }
+
+      // yItems (can be dynamically added after chart construction)
+      chart.yDomain = function(_) {
+        if (arguments.length == 0) return yDomain;
+        yDomain = _;
+        if (svg) {
+          // update the y ordinal scale
+          y = d3.scale.ordinal().domain(yDomain).rangeRoundPoints([height, 0], 1);
+          // update the y axis
+          yAxis.scale(y)(yAxisG);
+          // update the y ordinal scale for the nav chart
+          yNav = d3.scale.ordinal().domain(yDomain).rangeRoundPoints([heightNav, 0], 1);
+
+        }
+        return chart;
+      }
+
+      // debug
+      chart.debug = function(_) {
+        if (arguments.length == 0) return debug;
+        debug = _;
+        return chart;
+      }
+
+      // halt
+      chart.halt = function(_) {
+        if (arguments.length == 0) return halted;
+        halted = _;
+        return chart;
+      }
+
+      // version
+      chart.version = version;
+
+      return chart;
+
+    } // end realTimeChart function
+
+
+
+    </script>
+    </body>
+    </html>
