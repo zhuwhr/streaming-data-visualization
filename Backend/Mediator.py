@@ -21,7 +21,7 @@ class Mediator(Resource):
         newData = {'list': []}
         source['_source']= data
         newData['list'].append(source)
-        socketio.emit('my_response', {'data': newData['list']}, namespace='/articles')
+        socketio.emit('my_response', {'data': newData['list']}, namespace='/articles',broadcast = True)
 
 
 

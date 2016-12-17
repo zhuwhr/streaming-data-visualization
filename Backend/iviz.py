@@ -23,7 +23,7 @@ def get_response_json_object(url, max):
                 break
             else:
                 max = oid
-            print oid
+            print d
             post('http://localhost:5000/api/article', json=d)
         time.sleep(0.18)
 
@@ -31,5 +31,5 @@ def get_response_json_object(url, max):
 re = es.search(index='articles', doc_type='article', body={"aggs": {"max_id": {"max": {"field": "id"}}}}, size=1)
 max_id = re['aggregations']['max_id']['value']
 print(max_id)
-threading.Timer(180, get_response_json_object("http://feed.accern.com/v3/alphas", max_id)).start()
+get_response_json_object("http://feed.accern.com/v3/alphas", max_id)
 

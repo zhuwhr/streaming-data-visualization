@@ -2,16 +2,18 @@
     <html lang="en">
     <head>
         <meta charset="utf-8">
-        <title>Real Time Chart Multi</title>
-        <link rel=stylesheet type=text/css
-              href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css" media="all">
+        <title>Streaming Data Monitoring</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js" integrity="sha384-3ceskX3iaEnIogmQchP8opvBy3Mi7Ce34nWjpBIwVTHfGYWQS9jwHDVRnpKKHJg7" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.3.7/js/tether.min.js" integrity="sha384-XTs3FgkjiBgo8qjEjBk0tGmf3wPrWtA6coPfQDfFEY8AnYJwjalXCiosYRBIBZX8" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous">
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
         <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
         <style>
         #viewDiv {
            position: fixed;
            top: 45%;
            left: 50%;
-           transform: translate(-50%, -45%);
+           transform: translate(-72%, -17%);
         }
         .axis text {;
             font: 8px sans-serif bold;
@@ -128,30 +130,93 @@
         .slider.round:before {
           border-radius: 50%;
         }
+        
+        #infobox {
+            height: 180px;
+            padding: 10px 30px 10px 30px;
+            text-align: center;
+        }
+        ul{
+            padding-left: 100px;
+            list-style: none;
+        }
+        li{
+            text-align: left;
+        }
+        .axis-title {
+          text-anchor: end;
+          font-weight: bold;
+        }
+        .line {
+          fill: none;
+          stroke: steelblue;
+          stroke-width: 1.5px;
+          stroke-linejoin: round;
+          stroke-linecap: round;
+        }
 
-
+        #lineDiv {
+           position: fixed;
+           top: 45%;
+           left: 50%;
+           transform: translate(65%, -23%);
+        }
+            
         </style>
     <body>
-    <div class="well text-center">
-        <h4 align="center">Streaming Data Monitoring</h4>
-    </div>
-    <div align="center">
-        <b>Monitoring Mode</b><br>
-    <label class="switch">
-        <input type="checkbox" checked>
-        <div class="slider round"></div> 
-    </label>
+    <div id="infobox" class="jumbotron">
+        <div class="row">
+          <div class="col-sm-4">
+            <h5>Company</h5>
+            <ul>
+              <li id="company-name">Name: </li>
+              <li id="ticker">Ticker: </li>
+              <li id="sector">Sector: </li>
+              <li id="industry">Industry: </li>
+            <ul>
+          </div>
+          <div class="col-sm-5">
+            <h5>Event</h5>
+            <ul id="event">
+            <div id="insert"></div>
+            <li id="impact-score-overall">Impact Score(overall): </li>
+            <div id="impact"></div>
+            </ul>
+          </div>
+          <div class="col-sm-3">
+            <h5>Article</h5>
+            <ul>
+              <li id="article-type">Article-Type: </li>
+              <li id="url">Link: </li>
+              <li id="author-rank">Author-Rank: </li>
+              <li id="source-rank">Source-Rank: </li>
+              <li id="first-mention">First-Mention: </li>
+            </ul>
+          </div>
         </div>
-    <div style="max-width: 900px; max-height: 450px; padding: 3px">
 
+        <div align="left" >
+        <b>Monitoring Mode</b><br>
+        <label class="switch">
+            <input type="checkbox" id="monitor" onchange="monitor(this)" checked>
+            <div class="slider round"></div> 
+        </label>
+        
+    </div>
+              
+    </div>
+    
+    <div style="max-width: 900px; max-height: 450px; padding: 3px">        
 
         <input id="debug" type="checkbox" style="visibility:hidden" name="debug" value="" style="margin-bottom: 10px"/>
         <input id="halt" type="checkbox" name="halt" value="" style="visibility:hidden"/>
-
+        
         <div id="viewDiv"
              style="background-color: #f3f3f3;"></div>
         <!--add tooltip here-->
         <div id="tooltip">Tooltip</div>
+        <div id="lineDiv"
+             style="background-color: #f3f3f3;"></div>
 
 
     </div>
@@ -159,10 +224,34 @@
     <script src="https://d3js.org/d3.v3.min.js"></script>
     <script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
     <script type="text/javascript" charset="utf-8">
-
+    var socket;
+    socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + '/articles');
+    var monitoringMode = true;
+    function monitor(cb){
+        var box = document.getElementById('monitor');
+        if(box.checked){
+            monitoringMode = true;
+        }else{
+            monitoringMode = false;
+            setTimeout(startMonitoring,1000);    
+        }  
+    }
+    
+    function changeAxis(){
+        var yAxis = document.getElementById("yAxis");
+        alertme(yAxis.value);
+    }
+     
+        
+    function alertme(val){
+        alert(val);
+    }
     'use strict';
-    var yArr = ["Technology"];
-    //yArr.push(["SBUX"]);
+    var yArr = [];
+    var wise = 'sector';
+    var wiseChange = false;
+    var allSectors = [];
+    var currentSector = 0;
     var storySaturation = '{"saturation":[{"high":"0.8","medium":"0.6","low":"0.4"}]}';
     // create the real time chart
     var chart = realTimeChartMulti()
@@ -218,55 +307,151 @@
 
     // convert objects into cloudlines items and display
     var cloudLines = function (data){
-      console.log(data.length+":"+JSON.stringify(data));
+        console.log("Data Length: "+data.length);
 
+        wise = 'sector';
+        if(wiseChange){
+            yArr=[];
+            wiseChange = false;
+            cleanDisplay();
+            chart.clear();
+        }
         for(var i=0; i<data.length;i++){
 
             var d = data[i]._source;
              
             var now = new Date(d["harvested_at"]);
             let entities = d.entities.map(function(entity){ return entity["sector"]});
+            if(chart.yDomain().indexOf(entities[0])==-1){
 
-            // create new data item for each artile and each entity
-            entities.forEach(function(entity){
+                 yArr.push(entities[0]);
+                 chart.yDomain(yArr);
 
-                if(chart.yDomain().indexOf(entity)==-1){
+            }
 
-                    yArr.push(entity);
-                    chart.yDomain(yArr);
-
-                }
-                var value = parseFloat(JSON.parse(storySaturation).saturation[0][d["story_saturation"]]);
-                var obj = {
+            var obj = {
                     time: now,
-                    color: color(chart.yDomain().indexOf(entity)),
-                    category: entity,
+                    color: color(chart.yDomain().indexOf(entities[0])),
+                    category: entities[0],
                     type: "circle",
                     size: (Math.round(12)),
                     full: d
-                };
+            };
 
-                  // display the data item onto chart
-                chart.datum(obj);
-                
-            })
+            // display the data item onto chart
+            chart.datum(obj);
       }
     }
+    
+    
+    
+    // convert objects into cloudlines items and display
+    var cloudLinesCompanywise = function (data){
+      //console.log(data.length+":"+JSON.stringify(data));
 
+        var add = false;
+        wise = 'company';
+        if(wiseChange){
+            yArr=[];
+            wiseChange = false;
+            add = true;
+            cleanDisplay();
+            chart.clear();
+        }
+        console.log("Data Length: "+data.length);
 
-    $(document).ready(function() {
-                var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + '/articles');
+        for(var i=0; i<data.length;i++){
 
-                socket.on('connect', function() {
-                    socket.emit('get_top_articles', {data: 'I\'m connected!'});
-                });
+            var d = data[i]._source;
 
-                socket.on('my_response', function(msg) {
-                    //$('#data').append('<br>' + $('<div/>').text('Articles Received:' + msg.data).html());
-                    cloudLines(msg.data);
-                });
+            var now = new Date(d["harvested_at"]);
+            let entities = d.entities.map(function(entity){ return entity["ticker"]});
+            if(chart.yDomain().indexOf(entities[0])==-1 && add){
+
+                 yArr.push(entities[0]);
+                 chart.yDomain(yArr);
+
+            }
+
+            var obj = {
+                    time: now,
+                    color: color(chart.yDomain().indexOf(entities[0])),
+                    category: entities[0],
+                    type: "circle",
+                    size: (Math.round(12)),
+                    full: d
+            };
+
+            // display the data item onto chart
+            chart.datum(obj);
+            
+        }
+    }
+
+    socket.on('connect', function() {
+        socket.emit('get_allSector_articles', {data: ''});
     });
 
+    socket.on('my_response', function(msg) {
+        if(wise == 'sector'){
+            cloudLines(msg.data);
+        }else{
+            cloudLinesCompanywise(msg.data);
+        }
+
+    });
+        
+    socket.on('receiveAllSectors', function(msg) {
+                   
+        allSectors = msg.data;
+        sectorwiseEvents();
+
+    });
+    
+    socket.on('receiveSectorArticle', function(msg) {
+                   
+        wiseChange = true;
+        
+        cloudLinesCompanywise(msg.data);
+
+    });
+       
+    socket.on('receiveAllSectorArticle', function(msg) {
+                   
+        wiseChange = true;
+        wise = 'sector';
+        cloudLines(msg.data);
+        setTimeout(getAllsectors,30000);
+
+    });
+        
+    function getAllsectors(){
+        socket.emit('get_allSectors', {data: 'I\'m connected!'});
+    }
+        
+    function startMonitoring(){
+        alert("here");
+    }
+        
+    function sectorwiseEvents(){
+        
+        wise = 'company';
+        socket.emit('get_sector_articles', {data: allSectors[currentSector]});
+        currentSector++;
+        if(currentSector>10){
+            currentSector = 0;
+            setTimeout(sectorEvent,20000);
+        }else{
+            setTimeout(sectorwiseEvents,20000);
+        }
+        
+    }
+        //["Finance","Health Care","Technology","Capital Goods","Consumer Services","Public Utilities","Energy","Basic Industries","Consumer Non-Durables","Consumer Durables","Miscellaneous","Transportation"]
+    
+    function sectorEvent(){
+        socket.emit('get_allSector_articles', {data: 'I\'m connected!'});
+    }
+        
     function realTimeChartMulti() {   
 
       var version = "0.1.0",
@@ -400,9 +585,6 @@
                 yAxisG.append("text")
                     .attr("class", "title")
                     .attr("transform", "translate(" + (-margin.right+150) + ", " + (-margin.top / 3 - 10) + ")")
-                  //  .attr("transform", "rotate(-90)")
-                    //.attr("x", -height / 2)
-                    //.attr("y", -margin.left +170) //-35
                     .attr("dy", ".71em")
                     .text(function(d) {
                       var text = yTitle == undefined ? "" : yTitle;
@@ -413,7 +595,6 @@
                 // define main chart scales
                 x = d3.time.scale().range([0, width]);
                 y = d3.scale.ordinal().domain(yDomain).rangeRoundPoints([height, 0], 1)
-                //console.log(yArr)
 
                 var line = d3.svg.line()
                 .x(function(d) { return x(d.x); })
@@ -532,6 +713,13 @@
                     if (d.time.getTime() > startTime.getTime()) return true;
                   })
 
+
+				  //Yash added here
+				  //yAxis.tickValues(d3.scale.linear()
+					//.domain(y.domain())
+					  //.ticks(data.length));
+				  
+
                   // determine number of categories
                   var categoryCount = yDomain.length;
                   if (debug) console.log("yDomain", yDomain)
@@ -582,6 +770,7 @@
                           .enter()
                             .append('p')
                             .text(d => d)
+                        displayInfo(d.full);
                       })
                       .on("mouseenter", function(d, i) {
                         d3.selectAll("circle")
@@ -615,6 +804,19 @@
                             return "black";
                         });
 
+                      })
+                    .on("click", function(d,i) {
+                        //plotChart(d.full);
+                        var categry = d.category;
+                      console.log(d.category);
+                        var filtered_data = {"data":[]};
+                        for(var j=0;j<data.length;j++){
+                            var st = JSON.stringify(data[j].full);
+                            if(st.indexOf(categry)!=-1){
+                                filtered_data['data'].push(data[j].full)
+                            }
+                        }
+                        plotChart(filtered_data,d.category+" Sentiment Analysis");
                       })
                     .on("mouseleave", function(d,i) {
                                 d3.select(this)
@@ -789,6 +991,20 @@
 
         return chart;
       }
+      
+      chart.refresh= function(_) {
+        if (arguments.length == 0) return datum;
+        datum = _;
+        data = [];
+        data.push(datum);
+
+        return chart;
+      }
+      
+      chart.clear= function() {
+        data = [];
+        return chart;
+      }
 
       // svg width
       chart.width = function(_) {
@@ -869,8 +1085,144 @@
 
     } // end realTimeChart function
 
+    function displayInfo(article){
+        cleanDisplay();
+		var prefix = "";
+		for(var i =0; i < article["entities"].length; i++){
+			$("#company-name").append(prefix).append(article["entities"][i]["name"])
+			$("#ticker").append(prefix).append(article["entities"][i]["ticker"])
+			$("#sector").append(article["entities"][i]["sector"])
+			$("#industry").append(article["entities"][i]["industry"])
+			prefix = "/"
+		}
+		prefix = ""
+		
+		for(var i=0; i< article["event_groups"].length; i++){
+			$("#insert").append("<li>Type/Group: " + article["event_groups"][i]["type"] +"/"+ article["event_groups"][i]["group"] + "</li>")
+			
+		}
+        
+		$("#impact-score-overall").append(article["event_impact_score"]["overall"].toFixed(2));
+		var on_entities = article["event_impact_score"]["on_entities"];
+		for(var i=0;i<on_entities.length; i++){
+			$("#impact").append("<li>Impact Score(on " + on_entities[i]["entity"]+"): "+on_entities[i]["on_entity"] + "</li>")
+		}
+		
+		$("#article-type").append(article["article_type"]).css('textTransform','capitalize');
+		$("#url").append("<a href='" + article["article_url"] +"' target='_blank'>Visit article</a>")
+		$("#author-rank").append(article["overall_author_rank"])
+		$("#source-rank").append(article["overall_source_rank"])
+		$("#first-mention").append(article["first_mention"].toString()).css('textTransform','capitalize');
+		
+	};
+        
+    function cleanDisplay(){
+        $("#company-name").html("");
+        $("#company-name").append("Name: ");
+        $("#ticker").html("");
+        $("#ticker").append("Ticker: ");
+        $("#sector").html("");
+        $("#sector").append("Sector: ");
+        $("#industry").html("");
+        $("#industry").append("Industry: ");
+        $("#first-mention").html("");
+        $("#first-mention").append("First Mention: ");
+        $("#source-rank").html("");
+        $("#source-rank").append("Source Rank: ");
+        $("#author-rank").html("");
+        $("#author-rank").append("Author Rank: ");
+        $("#url").html("");
+        $("#url").append("Link: ");
+        $("#article-type").html("");
+        $("#article-type").append("Article-Type: ");
+        $("#impact").html("");
+        $("#impact-score-overall").html("");
+        $("#impact-score-overall").append("Impact-Score(Overall): ")
+        $("#insert").html("");
+    }
+        
+    function plotChart(fdata,title){
+        var filtered_data=[];
+        fdata['data'].forEach(function(d) {
+            if(d.harvested_at!=null && d.story_sentiment!=null){
+                d.harvested_at = new Date(d.harvested_at);
+                d.story_sentiment = +d.story_sentiment;
+                filtered_data.push(d);
+            }
 
+            filtered_data.sort((a,b)=>{return a.harvested_at-b.harvested_at; })
 
+        });
+
+        for(var i=0;i<filtered_data.length;i++){
+            console.log(i+" here "+filtered_data[i].harvested_at);    
+        }
+        
+        var margin = {top: 30, right: 30, bottom: 40, left: 50};
+            var width = 400 - margin.left - margin.right,
+            height = 300 - margin.top - margin.bottom;
+
+        var x = d3.time.scale()
+            .range([0, width]);
+
+        var y = d3.scale.linear()
+               .domain([-1,1])
+                .range([height, 0]);
+
+        var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom")
+            .tickFormat("");
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left")
+            .tickSize(-width);
+
+        var line = d3.svg.line()
+            .x(function(d) { return x(new Date(d.harvested_at)); })
+            .y(function(d) { return y(+d.story_sentiment); });
+
+        d3.select("#Line_Chart").remove();
+        var svg = d3.select("#lineDiv").append("svg")
+            .attr("id","Line_Chart")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        var gX = svg.append("g")
+            .attr("class", "axis axis--x")
+            .attr("transform", "translate(0,"+height+")");
+
+        var gY = svg.append("g")
+            .attr("class", "axis axis--y"); 
+
+        gY.append("text")
+            .attr("class", "axis-title")
+            .attr("transform", "translate(140,-25)")
+            .attr("y", 6)
+            .attr("dy", ".71em")
+            .text(title);
+
+      x.domain(d3.extent(filtered_data, function(d) { return d.harvested_at; }));
+      y.domain(d3.extent(filtered_data, function(d) { return +d.story_sentiment; }));
+
+      yAxis.tickValues(d3.scale.linear()
+          .domain(y.domain())
+          .ticks(1));
+      gX.call(xAxis);
+
+      gY.call(yAxis)
+         .selectAll(".tick")
+         .classed("tick--one", function(d) { return +d.story_sentiment; });
+
+      svg.append("path")
+          .datum(filtered_data)
+          .attr("class", "line")
+          .attr("d", line);
+    }
+        
     </script>
     </body>
     </html>
