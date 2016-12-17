@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.axis {
+  font: 10px sans-serif;
+}
+
+.axis-title {
+  text-anchor: end;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.axis--x path {
+  display: none;
+}
+
+.axis--y .tick:not(.tick--one) line {
+  stroke-opacity: .15;
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+</style>
+<body>
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script>
+
+var margin = {top: 30, right: 30, bottom: 40, left: 50};
+    var width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+//var formatChange = function(x) { return formatPercent(x - 1); },
+var parseDate = d3.time.format("%d-%b-%y").parse;
+
+var x = d3.time.scale()
+    .range([0, width]);
+
+var y = d3.scale.linear()
+    .domain([-1, 1])
+    .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    .tickSize(-width, 0);
+
+var line = d3.svg.line()
+    .x(function(d) { return x(d.harvested_at); })
+    .y(function(d) { return y(+d.story_sentiment); });
+    
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var gX = svg.append("g")
+    .attr("class", "axis axis--x")
+    .attr("transform", "translate(0,"+height+")");
+
+var gY = svg.append("g")
+    .attr("class", "axis axis--y");
+
+gY.append("text")
+    .attr("class", "axis-title")
+    .attr("transform", "rotate(-90)")
+    .attr("y", 6)
+    .attr("dy", ".71em")
+    .text("Sentiment");
+
+//d3.tsv("C:/Program Files (x86)/Brackets/data.tsv", function(error, data) {
+//  if (error) throw error;
+//
+//  // Compute price relative to base value (hypothetical purchase price).
+//  var baseValue = +data[0].close;
+//  data.forEach(function(d) {
+//    d.date = parseDate(d.date);
+//    d.ratio = d.close / baseValue;
+//  });
+    
+var url = "https://raw.githubusercontent.com/Geminiii/d3labs/master/accern_response.json";
+d3.json(url, function (error, data) {
+    
+    console.log(data)
+
+  if(error) console.log(error);
+
+    var filtered_data=[];
+  //render(response);
+    // var baseValue = +data[0].close;
+    data.forEach(function(d) {
+        if(d.harvested_at!=null){
+            d.harvested_at = new Date(d.harvested_at);
+            d.story_sentiment = d.story_sentiment;
+            filtered_data.push(d);
+        }
+        
+    filtered_data.sort((a, b) => {return a.harvested_at - b.harvested_at; })
+
+//  cloudLines(response);
+
+});
+    
+//var data = data.map(function(obj){
+// return obj.filter(function(obj) {
+//  return obj.harvested_at != null;
+// })
+//})
+
+//var validatedInput = function(inptArray) { 
+// return inptArray.filter(function(obj) {
+//  return obj.harvested_at != null;
+// });
+//};
+    
+var validatedInput = function(inputArray) { 
+  if(inputArray.harvested_at!=null)
+     return inputArray;
+ };
+
+
+  
+  //x.domain(d3.extent(data, function(d) { return d.harvested_at; }));
+  //y.domain(d3.extent(data, function(d) { return d.story_sentiment; }));
+    
+  x.domain(d3.extent(filtered_data.map(e => e.harvested_at)));
+  y.domain([-1,1]);    
+
+    //d3.max(data, function(d) { return d.story_sentiment; 
+  // Use a second linear scale for ticks.
+  yAxis.tickValues(d3.scale.linear()
+      .domain(y.domain())
+      .ticks(20));
+
+  gX.call(xAxis);
+  gY.call(yAxis)
+    .selectAll(".tick")
+      .classed("tick--one", function(d) { return +d.stort_sentiment; });
+
+  svg.append("path")
+      .datum(filtered_data)
+      .attr("class", "line")
+      .attr("d", line);
+});
+
+</script>

@@ -2,56 +2,103 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <!-- Author: Bo Ericsson -->
   <title>Real Time Chart Multi</title>
   <link rel=stylesheet type=text/css href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css" media="all">
   <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
   <!--<link rel=stylesheet type=text/css href="../_lib/bootstrap.min.css" media="all">-->
   <style>
-  .axis text {
-    font: 10px sans-serif;
-  }
-  .chartTitle {
-    font-size: 12px;
-    font-weight: bold;
-    text-anchor: middle; 
-  }
-  .axis .title {
-    font-weight: bold;
-    text-anchor: middle;
-  }
-  .axis path,
-  .axis line {
-    fill: none;
-    stroke: #000;
-    shape-rendering: crispEdges;
-  }
-  .x.axis path {
-    fill: none;
-    stroke: #000;
-    shape-rendering: crispEdges;
-  }
-  .nav .area {
-    fill: lightgrey;
-    stroke-width: 0px;
-  }
-  .nav .line {
-    fill: none;
-    stroke: darkgrey;
-    stroke-width: 1px;
-  }
-  .viewport {
-    stroke: grey;
-    fill: black;
-    fill-opacity: 0.3;
-  }
-  .viewport .extent {
-    fill: green;
-  }
-  .well {
-    padding-top: 0px;
-    padding-bottom: 0px;
-  }
+      .axis text {
+        font: 10px sans-serif;
+      }
+      .chartTitle {
+        font-size: 12px;
+        font-weight: bold;
+        text-anchor: middle; 
+      }
+      .axis .title {
+        font-weight: bold;
+        text-anchor: middle;
+      }
+      .axis path,
+      .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+      }
+      .x.axis path {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+      }
+      .nav .area {
+        fill: lightgrey;
+        stroke-width: 0px;
+      }
+      .nav .line {
+        fill: none;
+        stroke: darkgrey;
+        stroke-width: 1px;
+      }
+      .viewport {
+        stroke: grey;
+        fill: black;
+        fill-opacity: 0.3;
+      }
+      .viewport .extent {
+        fill: green;
+      }
+      .well {
+        padding-top: 0px;
+        padding-bottom: 0px;
+      }
+      
+        .dropbtn {
+            background-color: #59068d;
+            color: white;
+            padding: 16px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .dropbtn:hover, .dropbtn:focus {
+            background-color: #3e8e41;
+        }
+      
+        #myInput {
+            border-box: box-sizing;
+            background-image: url('searchicon.png');
+            background-position: 14px 12px;
+            background-repeat: no-repeat;
+            font-size: 16px;
+            padding: 14px 20px 12px 45px;
+            border: none;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f6f6f6;
+            min-width: 230px;
+            overflow: auto;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown a:hover {background-color: #ddd}
+
+        .show {display:block;}
   </style>
 <body>
 
@@ -60,8 +107,18 @@
   <div class="well">
     <h4>D3 Based Real Time Chart with Multiple Data Streams</h4>
   </div>
+    
+    <div class="dropdown">
+    <button onclick="myFunction()" class="dropbtn">Dropdown</button>
+      <div id="myDropdown" class="dropdown-content">
+        <input type="text" placeholder="Search.." id="myInput" onkeyup="filterFunction()">
+      </div>
+    </div>
+    
+<!--  
   <input id="debug" type="checkbox" name="debug" value="debug" style="margin-bottom: 10px" /> Debug
   <input id="halt" type="checkbox" name="halt" value="halt" style="margin-bottom: 10px" /> Halt
+-->
 
   <div id="viewDiv"></div>
 <!--add tooltip here-->
@@ -142,13 +199,13 @@ var cloudLines = function (data){
     // create new data item for each artile and each entity
     entities.forEach(function(entity){
 
-      if(chart.yDomain().indexOf(entity)==-1){
-
+      if(chart.yDomain().indexOf(entity)==-1) {
         yArr.push(entity);
         chart.yDomain(yArr);
-
       }
+        
      var value = parseFloat(JSON.parse(storySaturation).saturation[0][d["story_saturation"]]);
+        
       var obj = {
         time: now,
         color: color(chart.yDomain().indexOf(entity)),
@@ -190,6 +247,7 @@ d3.json(url, function (error, response) {
   //render(response);
   cloudLines(response);
 });
+    
 /*
 $(document).ready(function() {
 
@@ -205,6 +263,7 @@ $(document).ready(function() {
             });
 });
 */
+    
 cloudLines([{"id":940001,
 	"article_id":{"$oid":"583ebd8b69fe9f03f10af49c"},
 	"article_sentiment":-0.077,
@@ -239,10 +298,33 @@ cloudLines([{"id":940001,
 	"story_shares":null,
 	"story_volume":10}])
 
-<!-- Author: Bo Ericsson, bo@boe.net -->
-<!-- Inspiration from numerous examples by Mike Bostock, http://bl.ocks.org/mbostock, -->
-<!-- and example by Andy Aiken, http://blog.scottlogic.com/2014/09/19/interactive.html -->
-'use strict';
+//dropdown
+function myFunction() {
+    d3.select("#myDropdown").selectAll("a")
+        .data(yArr)
+        .enter()
+            .append("a")
+            .text(d => d);
+    
+    document.getElementById("myDropdown").classList.toggle("show");
+}
+
+function filterFunction() {
+    var input, filter, ul, li, a, i;
+    input = document.getElementById("myInput");
+    filter = input.value.toUpperCase();
+    div = document.getElementById("myDropdown");
+    a = div.getElementsByTagName("a");
+    for (i = 0; i < a.length; i++) {
+        if (a[i].innerHTML.toUpperCase().indexOf(filter) > -1) {
+            a[i].style.display = "";
+        } else {
+            a[i].style.display = "none";
+        }
+    }
+}
+
+
 
 function realTimeChartMulti() {
 
