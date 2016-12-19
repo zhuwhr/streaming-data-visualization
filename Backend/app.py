@@ -64,7 +64,7 @@ def get_allSector_articles(message):
         compareDate = datetime(articleDate.year, articleDate.month, articleDate.day, tzinfo=tz.tzutc())
         if compareDate == current:
             dicto['hits'].append(artcle)
-    emit('receiveAllSectorArticle', {'data': dicto['hits']}, broadcast=True)
+    emit('receiveAllSectorArticle', {'data': dicto['hits']})
 
 @socketio.on('get_allSectors', namespace='/articles')
 def get_allSectors(message):
@@ -103,7 +103,7 @@ def get_top_articles(message):
     for tickerVal in newA:
         re = es.search(index='articles', doc_type='article',body={"query": {"bool": {"must":[{"match":{"entities.ticker":tickerVal}}]}}},size=10000)
         emit('my_response',
-             {'data': re['hits']['hits']}, broadcast=True)
+             {'data': re['hits']['hits']})
 
 @socketio.on('get_articles', namespace='/articles')
 def get_company_articles(message):
@@ -111,12 +111,12 @@ def get_company_articles(message):
     re = es.search(index='articles', doc_type='article',body={"query": {"bool": {"must":[{"match":{"entities.ticker":company}}]}}},size=10000)
     responseData = re['hits']['hits']
     emit('my_response',
-          {'data': json.dumps(responseData, sort_keys = False, indent = 2)},broadcast=True)
+          {'data': json.dumps(responseData, sort_keys = False, indent = 2)})
 
 api = Api(app)
 api.add_resource(Mediator, "/api/article", endpoint="article")
 
 if __name__ == '__main__':
-    #socketio.run(app,host= '0.0.0.0', port=5000, debug=False)
-    socketio.run(app, debug=False)
+    socketio.run(app,host= '0.0.0.0', port=5000, debug=False)
+    #socketio.run(app, debug=False)
 

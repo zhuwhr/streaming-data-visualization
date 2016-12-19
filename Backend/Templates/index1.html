@@ -553,11 +553,6 @@
                 // the former will contain a clip path to constrain objects to the chart area;
                 // no equivalent clip path is created for the nav chart as the data itself
                 // is clipped to the full time domain
-                var barG = main.append("g")
-                    .attr("class", "barGroup")
-                    .attr("transform", "translate(0, 0)")
-                    .attr("clip-path", "url(#myClip)");
-
                 // add group for x axis
                 xAxisG = main.append("g")
                     .attr("class", "x axis")
@@ -594,6 +589,10 @@
                       return text;
                     });
 
+                var barG = main.append("g")
+                    .attr("class", "barGroup")
+                    .attr("transform", "translate(0, 0)")
+                    .attr("clip-path", "url(#myClip)");
 
                 // define main chart scales
                 x = d3.time.scale().range([0, width]);
@@ -761,7 +760,16 @@
                         return "bar-" + barId++;
                       })
                       .on("click", (d, i) => {
-                        let info = [d.full.entities[0].name, d.full.entities[0].ticker, d.full.entities[0].region, d.full.entities[0].sector]
+                        let info;
+                        if((d.full.entities[0].region=="n/a" || d.full.entities[0].region=="N/A") && (d.full.entities[0].sector=="n/a" || d.full.entities[0].sector=="N/A")){
+                            info = [d.full.entities[0].name, d.full.entities[0].ticker];
+                        }else if(d.full.entities[0].region=="n/a" || d.full.entities[0].region=="N/A"){
+                            info = [d.full.entities[0].name, d.full.entities[0].ticker, d.full.entities[0].sector];
+                        }else if(d.full.entities[0].sector=="n/a" || d.full.entities[0].sector=="N/A"){
+                            info = [d.full.entities[0].name, d.full.entities[0].ticker, d.full.entities[0].region];
+                        }else{
+                            info = [d.full.entities[0].name, d.full.entities[0].ticker, d.full.entities[0].region, d.full.entities[0].sector];
+                        }
                         d3.select("#tooltip")
                           .text('')
                           .style({
@@ -1204,7 +1212,7 @@
             .text(title);
 
       x.domain(d3.extent(filtered_data, function(d) { return d.harvested_at; }));
-      y.domain(d3.extent(filtered_data, function(d) { return +d.story_sentiment; }));
+      y.domain([-1,1]);
 
       yAxis.tickValues(d3.scale.linear()
           .domain(y.domain())
