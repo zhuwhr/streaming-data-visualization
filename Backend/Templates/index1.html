@@ -76,7 +76,7 @@
             border-radius: 10px;
         }
         .switch {
-          position: relative;
+          position: fixed;
           display: inline-block;
           width: 40px;
           height: 24px;
@@ -161,6 +161,9 @@
            left: 50%;
            transform: translate(65%, -23%);
         }
+        .center {
+            text-align: center;
+        }
             
         </style>
     <body>
@@ -195,16 +198,18 @@
           </div>
         </div>
 
-        <div align="left" >
+    <div align="left" >
         <b>Monitoring Mode</b><br>
         <label class="switch">
             <input type="checkbox" id="monitor" onchange="monitor(this)" checked>
             <div class="slider round"></div> 
-        </label>
-        
+        </label>    
     </div>
-              
+    <div id="yaxisdesc" class="center">
+        <b>Sectorwise Distribution</b>
+              </div>   
     </div>
+    <div id="tooltip"></div>
     
     <div style="max-width: 900px; max-height: 450px; padding: 3px">        
 
@@ -213,8 +218,7 @@
         
         <div id="viewDiv"
              style="background-color: #f3f3f3;"></div>
-        <!--add tooltip here-->
-        <div id="tooltip">Tooltip</div>
+        
         <div id="lineDiv"
              style="background-color: #f3f3f3;"></div>
 
@@ -231,22 +235,12 @@
         var box = document.getElementById('monitor');
         if(box.checked){
             monitoringMode = true;
+            socket.emit('get_allSector_articles', {data: ''});
         }else{
-            monitoringMode = false;
-            setTimeout(startMonitoring,1000);    
+            monitoringMode = false;    
         }  
     }
-    
-    function changeAxis(){
-        var yAxis = document.getElementById("yAxis");
-        alertme(yAxis.value);
-    }
-     
         
-    function alertme(val){
-        alert(val);
-    }
-    'use strict';
     var yArr = [];
     var wise = 'sector';
     var wiseChange = false;
@@ -315,6 +309,8 @@
             wiseChange = false;
             cleanDisplay();
             chart.clear();
+            chart.yTitle("Sector");
+            document.getElementById('yaxisdesc').innerHTML = '<b>Sectorwise Distribution</b>';
         }
         for(var i=0; i<data.length;i++){
 
@@ -357,6 +353,7 @@
             add = true;
             cleanDisplay();
             chart.clear();
+            document.getElementById('yaxisdesc').innerHTML = '<b>'+data[0]._source['entities'][0]['sector']+' Companywise Distribution</b>';
         }
         console.log("Data Length: "+data.length);
 
@@ -366,6 +363,9 @@
 
             var now = new Date(d["harvested_at"]);
             let entities = d.entities.map(function(entity){ return entity["ticker"]});
+            if(!add && chart.yDomain().indexOf(entities[0])==-1){
+                continue;
+            }
             if(chart.yDomain().indexOf(entities[0])==-1 && add){
 
                  yArr.push(entities[0]);
@@ -382,6 +382,9 @@
                     full: d
             };
 
+            if(i==0){
+                chart.yTitle(entities[0]['sector']+" Companies");
+            }
             // display the data item onto chart
             chart.datum(obj);
             
@@ -404,33 +407,34 @@
     socket.on('receiveAllSectors', function(msg) {
                    
         allSectors = msg.data;
-        sectorwiseEvents();
+        if(monitoringMode){
+            sectorwiseEvents();
+        }
 
     });
     
     socket.on('receiveSectorArticle', function(msg) {
-                   
-        wiseChange = true;
         
-        cloudLinesCompanywise(msg.data);
+        if(monitoringMode && msg.data.length > 0){
+            wiseChange = true;
+            cloudLinesCompanywise(msg.data);
+        }
 
     });
        
     socket.on('receiveAllSectorArticle', function(msg) {
-                   
-        wiseChange = true;
-        wise = 'sector';
-        cloudLines(msg.data);
-        setTimeout(getAllsectors,30000);
+                
+        if(monitoringMode){
+            wiseChange = true;
+            wise = 'sector';
+            cloudLines(msg.data);
+            setTimeout(getAllsectors,30000);
+        }
 
     });
         
     function getAllsectors(){
         socket.emit('get_allSectors', {data: 'I\'m connected!'});
-    }
-        
-    function startMonitoring(){
-        alert("here");
     }
         
     function sectorwiseEvents(){
@@ -524,7 +528,7 @@
                     .attr("transform", "translate (" + margin.left + "," + margin.top + ")");
 
                 // define clip-path
-               /* main.append("defs").append("clipPath")
+                main.append("defs").append("clipPath")
                     .data(yArr)
                     .attr("class","line")
                     .attr("d",line)
@@ -534,7 +538,7 @@
                     .attr("x", 0)
                     .attr("y", 0)
                     .attr("width", width)
-                    .attr("height", height);*/
+                    .attr("height", height);
           
 
                 // create chart background
@@ -554,7 +558,7 @@
                 var barG = main.append("g")
                     .attr("class", "barGroup")
                     .attr("transform", "translate(0, 0)")
-                    .attr("clip-path", "url(#myClip");
+                    .attr("clip-path", "url(#myClip)");
 
                 // add group for x axis
                 xAxisG = main.append("g")
@@ -563,8 +567,9 @@
 
                 // add group for y axis
                 yAxisG = main.append("g")
+                    .attr("id", "yaxis")
                     .attr("class", "y axis")
-                    .attr("transform", "translate(" + width + " ,0)");
+                    .attr("transform", "translate(" + (width+5) + " ,0)");
 
 
                 // in x axis group, add x axis title
@@ -603,7 +608,7 @@
 
                 // define main chart axis
                 xAxis = d3.svg.axis().orient("bottom");
-                yAxis = d3.svg.axis().tickSize(-width).orient("right");
+                yAxis = d3.svg.axis().tickSize(-width-5).orient("right");
 
                 // add nav chart
                 var nav = svg.append("g")
@@ -752,6 +757,7 @@
                         var node = document.createElementNS("http://www.w3.org/2000/svg", type);
                         return node;
                       })
+                      .style("cursor", "pointer")
                       .attr("class", "bar")
                       .attr("id", function() {
                         return "bar-" + barId++;
@@ -797,17 +803,25 @@
                                     opacity: 0
                                 });
                       });
+                
+                    d3.select('#yaxis')
+                        .data(data)
+                        .selectAll('.tick.major')
+                        .on('click',clickMe)
+
+                    function clickMe(d){alert(d);}
                   d3.selectAll('.y .tick')
                     .data(data)
+                    .style("cursor", "pointer")
                     .on('mouseover', function(d, i) {
                         d3.select(this).style("stroke", function(d, i) {
                             return "black";
                         });
 
                       })
-                    .on("click", function(d,i) {
-                        //plotChart(d.full);
-                        var categry = d.category;
+                    .on("click", (d, i) => {
+                      
+                      var categry = d.category;
                       console.log(d.category);
                         var filtered_data = {"data":[]};
                         for(var j=0;j<data.length;j++){
@@ -817,7 +831,8 @@
                             }
                         }
                         plotChart(filtered_data,d.category+" Sentiment Analysis");
-                      })
+                        
+                    })
                     .on("mouseleave", function(d,i) {
                                 d3.select(this)
                                    .style("stroke", undefined);
@@ -848,36 +863,6 @@
                         }
                         return retVal;
                       })
-                      .attr("cx", function(d) {
-                        var retVal = null;
-                        switch (getTagName(this)) {
-                          case "circle":
-                            retVal = Number(Math.round(x(d.time)));
-                            break;
-                          default:
-                        }
-                        return retVal;
-                      })
-                      .attr("cy", function(d) {
-                        var retVal = null;
-                        switch (getTagName(this)) {
-                          case "circle":
-                            retVal = y(d.category);
-                            break;
-                          default:
-                        }
-                        return retVal;
-                      })
-                      .attr("r", function(d) {
-                        var retVal = null;
-                        switch (getTagName(this)) {
-                          case "circle":
-                            retVal = Number(d.size) / 2;
-                            break;
-                          default:
-                        }
-                        return Number(retVal);
-                      })
                       .attr("width", function(d) {
                         var retVal = null;
                         switch (getTagName(this)) {
@@ -899,11 +884,39 @@
 
                         return retVal;
                       })
+                      .attr("cx", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "circle":
+                            retVal = Number(Math.round(x(d.time)));
+                            break;
+                          default:
+                        }
+                        return retVal;
+                      })
+                      .style("cursor", "pointer")
+                      .attr("cy", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "circle":
+                            retVal = y(d.category);
+                            break;
+                          default:
+                        }
+                        return retVal;
+                      })
+                      .attr("r", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "circle":
+                            retVal = Number(d.size) / 2;
+                            break;
+                          default:
+                        }
+                        return Number(retVal);
+                      })
                       .style("fill", function(d) { return d.color || "black"; })
-                      //.style("stroke", "orange")
-                      //.style("stroke-width", "1px")
-                      //.style("stroke-opacity", 0.8)
-                      .style("fill-opacity", function(d) { return 0.2 || 1; });
+                      .style("fill-opacity", function(d) { return 0.45 || 1; });
                      //yash balar
 
 
@@ -1088,25 +1101,16 @@
     function displayInfo(article){
         cleanDisplay();
 		var prefix = "";
-		for(var i =0; i < article["entities"].length; i++){
-			$("#company-name").append(prefix).append(article["entities"][i]["name"])
-			$("#ticker").append(prefix).append(article["entities"][i]["ticker"])
-			$("#sector").append(article["entities"][i]["sector"])
-			$("#industry").append(article["entities"][i]["industry"])
-			prefix = "/"
-		}
-		prefix = ""
+        $("#company-name").append(article["entities"][0]["name"])
+		$("#ticker").append(article["entities"][0]["ticker"])
+		$("#sector").append(article["entities"][0]["sector"])
+		$("#industry").append(article["entities"][0]["industry"])
 		
-		for(var i=0; i< article["event_groups"].length; i++){
-			$("#insert").append("<li>Type/Group: " + article["event_groups"][i]["type"] +"/"+ article["event_groups"][i]["group"] + "</li>")
-			
-		}
-        
+		$("#insert").append("<li>Type/Group: " + article["event_groups"][0]["type"] +"/"+ article["event_groups"][0]["group"] + "</li>")
+		
 		$("#impact-score-overall").append(article["event_impact_score"]["overall"].toFixed(2));
 		var on_entities = article["event_impact_score"]["on_entities"];
-		for(var i=0;i<on_entities.length; i++){
-			$("#impact").append("<li>Impact Score(on " + on_entities[i]["entity"]+"): "+on_entities[i]["on_entity"] + "</li>")
-		}
+        $("#impact").append("<li>Impact Score(on " + on_entities[0]["entity"]+"): "+on_entities[0]["on_entity"] + "</li>")
 		
 		$("#article-type").append(article["article_type"]).css('textTransform','capitalize');
 		$("#url").append("<a href='" + article["article_url"] +"' target='_blank'>Visit article</a>")
@@ -1153,10 +1157,6 @@
             filtered_data.sort((a,b)=>{return a.harvested_at-b.harvested_at; })
 
         });
-
-        for(var i=0;i<filtered_data.length;i++){
-            console.log(i+" here "+filtered_data[i].harvested_at);    
-        }
         
         var margin = {top: 30, right: 30, bottom: 40, left: 50};
             var width = 400 - margin.left - margin.right,
@@ -1200,7 +1200,7 @@
 
         gY.append("text")
             .attr("class", "axis-title")
-            .attr("transform", "translate(140,-25)")
+            .attr("transform", "translate(250,-25)")
             .attr("y", 6)
             .attr("dy", ".71em")
             .text(title);

@@ -117,5 +117,6 @@ api = Api(app)
 api.add_resource(Mediator, "/api/article", endpoint="article")
 
 if __name__ == '__main__':
-    socketio.run(app,host= '0.0.0.0', port=5000, debug=False)
+    #socketio.run(app,host= '0.0.0.0', port=5000, debug=False)
+    socketio.run(app, debug=False)
 
