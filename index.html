@@ -1,175 +1,1235 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Real Time Chart Multi</title>
-  <link rel=stylesheet type=text/css href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/css/bootstrap.min.css" media="all">
-  <!--<link rel=stylesheet type=text/css href="../_lib/bootstrap.min.css" media="all">-->
-  <style>
-  .axis text {
-    font: 10px sans-serif;
-  }
-  .chartTitle {
-    font-size: 12px;
-    font-weight: bold;
-    text-anchor: middle; 
-  }
-  .axis .title {
-    font-weight: bold;
-    text-anchor: middle;
-  }
-  .axis path,
-  .axis line {
-    fill: none;
-    stroke: #000;
-    shape-rendering: crispEdges;
-  }
-  .x.axis path {
-    fill: none;
-    stroke: #000;
-    shape-rendering: crispEdges;
-  }
-  .nav .area {
-    fill: lightgrey;
-    stroke-width: 0px;
-  }
-  .nav .line {
-    fill: none;
-    stroke: darkgrey;
-    stroke-width: 1px;
-  }
-  .viewport {
-    stroke: grey;
-    fill: black;
-    fill-opacity: 0.3;
-  }
-  .viewport .extent {
-    fill: green;
-  }
-  .well {
-    padding-top: 0px;
-    padding-bottom: 0px;
-  }
-  </style>
-<body>
+    <!doctype html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Streaming Data Monitoring</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js" integrity="sha384-3ceskX3iaEnIogmQchP8opvBy3Mi7Ce34nWjpBIwVTHfGYWQS9jwHDVRnpKKHJg7" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.3.7/js/tether.min.js" integrity="sha384-XTs3FgkjiBgo8qjEjBk0tGmf3wPrWtA6coPfQDfFEY8AnYJwjalXCiosYRBIBZX8" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css" integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi" crossorigin="anonymous">
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+        <style>
+        #viewDiv {
+           position: fixed;
+           top: 45%;
+           left: 50%;
+           transform: translate(-72%, -17%);
+        }
+        .axis text {;
+            font: 8px sans-serif bold;
+        }
+        .chartTitle {
+            font-size: 17px;
+            font-weight: bold;
+            text-anchor: middle;
+        }
+        .axis .title {
+            font-weight: bold;
+            text-anchor: middle;
+        }
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+        .x.axis path {
+            fill: none;
+            stroke: #000;
+            shape-rendering: crispEdges;
+        }
+        .nav .area {
+            fill: lightgrey;
+            stroke-width: 0px;
+        }
+        .nav .line {
+            fill: none;
+            stroke: darkgrey;
+            stroke-width: 1px;
+        }
+        .tick line {
+            stroke: lightgray;
+        }
+        .viewport {
+            stroke: grey;
+            fill: black;
+            fill-opacity: 0.3;
+        }
+        .viewport .extent {
+            fill: maroon;
+        }
+        .well {
+            padding-top: 0px;
+            padding-bottom: 0px;
+        }
+        #tooltip {
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: #fff;
+            font-weight: bold;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            visibility: hidden;
+            opacity: 0.1;
+            transition: all 0.5s;
+            border-radius: 10px;
+        }
+        .switch {
+          position: fixed;
+          display: inline-block;
+          width: 40px;
+          height: 24px;
+        }
+        .switch input {
+            display:none;
+        }
+        .slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #ccc;
+          -webkit-transition: .4s;
+          transition: .4s;
+        }
 
-<div style="max-width: 900px; max-height: 400px; padding: 10px">
+        .slider:before {
+          position: absolute;
+          content: "";
+          height: 16px;
+          width: 16px;
+          left: 4px;
+          bottom: 4px;
+          background-color: white;
+          -webkit-transition: .4s;
+          transition: .4s;
+        }
 
-  <div class="well">
-    <h4>D3 Based Real Time Chart with Multiple Data Streams 
-  </div>
-  <input id="debug" type="checkbox" name="debug" value="debug" style="margin-bottom: 10px" /> Debug
-  <input id="halt" type="checkbox" name="halt" value="halt" style="margin-bottom: 10px" /> Halt
+        input:checked + .slider {
+          background-color: #2196F3;
+        }
 
-  <div id="viewDiv"></div>
+        input:focus + .slider {
+          box-shadow: 0 0 1px #2196F3;
+        }
 
-</div>
+        input:checked + .slider:before {
+          -webkit-transform: translateX(16px);
+          -ms-transform: translateX(16px);
+          transform: translateX(16px);
+        }
 
-<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>-->
-<!--<script src="../_lib/d3.min.js"></script>-->
-<script src="realTimeChartMulti.js"></script>
-<script src="https://d3js.org/d3.v3.min.js"></script>
-<script>
-'use strict';
+        /* Rounded sliders */
+        .slider.round {
+          border-radius: 34px;
+        }
 
-// create the real time chart
-var chart = realTimeChartMulti()
-    .title("Chart Title")
-    .yTitle("Categories")
-    .xTitle("Time")
-    .yDomain(["FB", "SBUX", "SNE", "CSCO"]) // initial y domain (note array)
-    .border(true)
-    .width(900)
-    .height(350);
+        .slider.round:before {
+          border-radius: 50%;
+        }
+        
+        #infobox {
+            height: 180px;
+            padding: 10px 30px 10px 30px;
+            text-align: center;
+            position:relative;
+        }
+        ul{
+            padding-left: 100px;
+            list-style: none;
+        }
+        li{
+            text-align: left;
+        }
+        .axis-title {
+          text-anchor: end;
+          font-weight: bold;
+        }
+        .line {
+          fill: none;
+          stroke: steelblue;
+          stroke-width: 1.5px;
+          stroke-linejoin: round;
+          stroke-linecap: round;
+        }
 
-// invoke the chart
-var chartDiv = d3.select("#viewDiv").append("div")
-    .attr("id", "chartDiv")
-    .call(chart);
+        #lineDiv {
+           position: fixed;
+           top: 45%;
+           left: 50%;
+           transform: translate(65%, -23%);
+        }
+        .center {
+            text-align: center;
+        }
+            
+        </style>
+    <body>
+    <div id="infobox" class="jumbotron">
+        <div class="row">
+          <div class="col-sm-4">
+            <h5>Company</h5>
+            <ul>
+              <li id="company-name">Name: </li>
+              <li id="ticker">Ticker: </li>
+              <li id="sector">Sector: </li>
+              <li id="industry">Industry: </li>
+            <ul>
+          </div>
+          <div class="col-sm-5">
+            <h5>Event</h5>
+            <ul id="event">
+            <div id="insert"></div>
+            <li id="impact-score-overall">Impact Score(overall): </li>
+            <div id="impact"></div>
+            </ul>
+          </div>
+          <div class="col-sm-3">
+            <h5>Article</h5>
+            <ul>
+              <li id="article-type">Article-Type: </li>
+              <li id="url">Link: </li>
+              <li id="author-rank">Author-Rank: </li>
+              <li id="source-rank">Source-Rank: </li>
+              <li id="first-mention">First-Mention: </li>
+            </ul>
+          </div>
+    </div>
+    <div align="left" >
+        <b>Monitoring Mode</b><br>
+        <label class="switch">
+            <input type="checkbox" id="monitor" onchange="monitor(this)" checked>
+            <div class="slider round"></div> 
+        </label>    
+    </div>
+    <div id="yaxisdesc" class="center">
+        <b>Sectorwise Distribution</b>
+              </div>   
+    </div>
+    <div style="max-width: 900px; max-height: 450px; padding: 3px">        
 
-// alternative and equivalent invocation
-//chart(chartDiv); 
+        <input id="debug" type="checkbox" style="visibility:hidden" name="debug" value="" style="margin-bottom: 10px"/>
+        <input id="halt" type="checkbox" name="halt" value="" style="visibility:hidden"/>
+        
+        <div id="viewDiv"
+             style="background-color: #f3f3f3;"></div>
+        
+        <div id="lineDiv"
+             style="background-color: #f3f3f3;"></div>
+        <div id="tooltip"></div>
 
-// event handler for debug checkbox
-d3.select("#debug").on("change", function() {
-  var state = d3.select(this).property("checked")
-  chart.debug(state);
-})
+    </div>
 
-// event handler for halt checkbox
-d3.select("#halt").on("change", function() {
-  var state = d3.select(this).property("checked")
-  chart.halt(state);
-})
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+    <script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
+    <script type="text/javascript" charset="utf-8">
+    var socket;
+    socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + '/articles');
+    var monitoringMode = true;
+    function monitor(cb){
+        var box = document.getElementById('monitor');
+        if(box.checked){
+            monitoringMode = true;
+            socket.emit('get_allSector_articles', {data: ''});
+        }else{
+            monitoringMode = false;
+        }  
+    }
+        
+    var yArr = [];
+    var wise = 'sector';
+    var wiseChange = false;
+    var modeChange = false;
+    var allSectors = [];
+    var currentSector = 0;
+    var storySaturation = '{"saturation":[{"high":"0.8","medium":"0.6","low":"0.4"}]}';
+    // create the real time chart
+    var chart = realTimeChartMulti()
+        .title("Streaming Data Monitoring")
+        .yTitle("Sector")
+        .xTitle("Time")
+        .yDomain(yArr) // initial y domain (note array)
+        .border(true)
+        .width(900)
+        .height(400);
 
 
-// configure the data generator
+    // invoke the chart
+    var chartDiv = d3.select("#viewDiv").append("div")
+        .attr("id", "chartDiv")
+        .call(chart);
 
-// mean and deviation for generation of time intervals
-var tX = 5; // time constant, multiple of one second
-var meanMs = 1000 * tX, // milliseconds
-    dev = 200 * tX; // std dev
+    // alternative and equivalent invocation
+    //chart(chartDiv); 
 
-// define time scale
-var timeScale = d3.scale.linear()
-    .domain([300 * tX, 1700 * tX])
-    .range([300 * tX, 1700 * tX])
-    .clamp(true);
-
-// define function that returns normally distributed random numbers
-var normal = d3.random.normal(meanMs, dev);
-
-// define color scale
-var color = d3.scale.category10();
-
-// convert objects into cloudlines items and display
-var cloudLines = function (data){
-  data.forEach(function(d){
-    // create randomized timestamp for this category data item
-    var now = new Date(new Date().getTime() + (Math.random() - 0.5) * 1000);
-    let entities = d.entities.map(function(entity){ return entity["ticker"]});
-    console.log(d);
-    // create new data item for each artile and each entity
-    entities.forEach(function(entity){
-     //console.log(entity["story_sentiment"])
-      var obj = {
-        time: now,
-        color: color(chart.yDomain().indexOf(entity)),
-        category: entity,
-        type: "circle",
-        size: Math.max(Math.round(Math.random() * 12), 4)
-      };
-      
-      // display the data item onto chart
-      chart.datum(obj);
+    // event handler for debug checkbox
+    d3.select("#debug").on("change", function() {
+      var state = d3.select(this).property("checked")
+      chart.debug(state);
     })
-  })
-}
-  
-var url = "https://raw.githubusercontent.com/Geminiii/d3labs/master/accern_response.json";
 
-// 
-var findOne = function (haystack, arr) {
-    return arr.some(function (v) {
-        return haystack.indexOf(v) >= 0;
+    // event handler for halt checkbox
+    d3.select("#halt").on("change", function() {
+      var state = d3.select(this).property("checked")
+      chart.halt(state);
+    })
+
+
+    // configure the data generator
+
+    // mean and deviation for generation of time intervals
+    var tX = 5; // time constant, multiple of one second
+    var meanMs = 1000 * tX, // milliseconds
+        dev = 200 * tX; // std dev
+
+    // define time scale
+    var timeScale = d3.scale.linear()
+        .domain([300 * tX, 1700 * tX])
+        .range([300 * tX, 1700 * tX])
+        .clamp(true);
+
+    // define function that returns normally distributed random numbers
+    var normal = d3.random.normal(meanMs, dev);
+
+    // define color scale
+    var color = d3.scale.category10();
+
+
+    // convert objects into cloudlines items and display
+    var cloudLines = function (data){
+
+        wise = 'sector';
+        if(wiseChange){
+            yArr=[];
+            wiseChange = false;
+            cleanDisplay();
+            chart.clear();
+            chart.yTitle("Sector");
+            document.getElementById('yaxisdesc').innerHTML = '<b>Sectorwise Distribution</b>';
+        }
+        for(var j=allSectors.length-1; j>=0;j--){
+
+            if(chart.yDomain().indexOf(allSectors[j])==-1){
+                 yArr.push(allSectors[j]);
+            }
+
+        }
+        chart.yDomain(yArr);
+        for(var i=0; i<data.length;i++){
+
+            var d = data[i]._source;
+             
+            var now = new Date(d["harvested_at"]);
+            let entities = d.entities.map(function(entity){ return entity["sector"]});
+            if(chart.yDomain().indexOf(entities[0])!=-1){
+
+                 //yArr.push(entities[0]);
+                 //chart.yDomain(yArr);
+
+
+
+            var obj = {
+                    time: now,
+                    color: color(0),
+                    category: entities[0],
+                    type: "circle",
+                    size: (Math.round(12)),
+                    full: d
+            };
+
+            // display the data item onto chart
+            chart.datum(obj);
+            }
+      }
+    }
+    
+    
+    
+    // convert objects into cloudlines items and display
+    var cloudLinesCompanywise = function (data){
+      //console.log(data.length+":"+JSON.stringify(data));
+
+        var add = false;
+        wise = 'company';
+        if(wiseChange){
+            yArr=[];
+            wiseChange = false;
+            add = true;
+            cleanDisplay();
+            chart.clear();
+            document.getElementById('yaxisdesc').innerHTML = '<b>'+data[0]._source['entities'][0]['sector']+' Companywise Distribution</b>';
+        }
+        console.log("Data Length: "+data.length);
+
+        for(var i=0; i<data.length;i++){
+
+            var d = data[i]._source;
+
+            var now = new Date(d["harvested_at"]);
+            let entities = d.entities.map(function(entity){ return entity["ticker"]});
+            if(!add && chart.yDomain().indexOf(entities[0])==-1){
+                continue;
+            }
+            if(chart.yDomain().indexOf(entities[0])==-1 && add){
+
+                 yArr.push(entities[0]);
+                 chart.yDomain(yArr);
+
+            }
+
+            var obj = {
+                    time: now,
+                    color: color(0),
+                    category: entities[0],
+                    type: "circle",
+                    size: (Math.round(12)),
+                    full: d
+            };
+
+            if(i==0){
+                chart.yTitle(entities[0]['sector']+" Companies");
+            }
+            // display the data item onto chart
+            chart.datum(obj);
+            
+        }
+    }
+
+    socket.on('connect', function() {
+        getAllsectors();
     });
-};
 
-function render(data){
-  // filtered out articles not related to companies interested in
-  var filteredData = data.filter(function(d) {
-    // find the 
-    var entityTikers = d.entities.map(function(entity){ return entity["ticker"]});
-    return findOne(entityTikers, chart.yDomain());
-  });
-  // display articles onto the cloudlines
-  cloudLines(filteredData);
-};
+    socket.on('my_response', function(msg) {
+        if(wise == 'sector'){
+            cloudLines(msg.data);
+        }else{
+            cloudLinesCompanywise(msg.data);
+        }
 
-// read the data file
-d3.json(url, function (error, response) {
-  if(error) console.log(error);
-  render(response);
-});
+    });
+        
+    socket.on('receiveAllSectors', function(msg) {
+                   
+        allSectors = msg.data;
+        if(monitoringMode){
+            if(modeChange){
+                modeChange = false;
+            }else{
+                socket.emit('get_allSector_articles', {data: ''});
+            }
+        }
 
-</script>
+    });
+    
+    socket.on('receiveSectorArticle', function(msg) {
+        
+        if(monitoringMode && msg.data.length > 0){
+            if(modeChange){
+                modeChange = false;
+            }else{
+                wiseChange = true;
+                cloudLinesCompanywise(msg.data);
+            }
+        }
+
+    });
+       
+    socket.on('receiveAllSectorArticle', function(msg) {
+                
+        if(monitoringMode){
+            if(modeChange){
+                modeChange = false;
+            }else{
+                wiseChange = true;
+                wise = 'sector';
+                cloudLines(msg.data);
+                setTimeout(sectorwiseEvents,30000);
+            }
+        }
+
+    });
+        
+    function getAllsectors(){
+        socket.emit('get_allSectors', {data: 'I\'m connected!'});
+    }
+        
+    function sectorwiseEvents(){
+        
+        wise = 'company';
+        socket.emit('get_sector_articles', {data: allSectors[currentSector]});
+        currentSector++;
+        if(currentSector>10){
+            currentSector = 0;
+            setTimeout(sectorEvent,20000);
+        }else{
+            setTimeout(sectorwiseEvents,20000);
+        }
+        
+    }
+
+    
+    function sectorEvent(){
+        socket.emit('get_allSector_articles', {data: 'I\'m connected!'});
+    }
+        
+    function realTimeChartMulti() {   
+
+      var version = "0.1.0",
+          datum, data,
+          maxSeconds = 300, pixelsPerSecond = 10,
+          svgWidth = 900, svgHeight = 400,
+          margin = { top: 20, bottom: 20, left:30, right: 150, topNav: 10, bottomNav: 20 },
+          dimension = { chartTitle: 20, xAxis: 20, yAxis: 20, xTitle: 20, yTitle: 20, navChart: 70 },
+          maxY = 100, minY = 0,
+          chartTitle, yTitle, xTitle,
+          drawXAxis = true, drawYAxis = true, drawNavChart = true,
+          border,
+          selection,
+          barId = 0,
+          yDomain = [],
+          debug = false,
+          barWidth = 5,
+          halted = false,
+          x, y,
+          xNav, yNav,
+          width, height,
+          widthNav, heightNav,
+          xAxisG, yAxisG,
+          xAxis, yAxis,
+          svg;
+
+
+      var chartInnerHeight = svgHeight - margin.top - margin.bottom;
+      var chartInnerWidth = svgWidth - margin.left - margin.right;
+      // create the chart
+      var chart = function(s) {
+                selection = s;
+                if (selection == undefined) {
+                  console.error("selection is undefined");
+                  return;
+                };
+
+                // process titles
+                chartTitle = chartTitle || "";
+                xTitle = xTitle || "";
+                yTitle = yTitle || "";
+
+                // compute component dimensions
+                var chartTitleDim = chartTitle == "" ? 0 : dimension.chartTitle,
+                    xTitleDim = xTitle == "" ? 0 : dimension.xTitle,
+                    yTitleDim = yTitle == "" ? 0 : dimension.yTitle,
+                    xAxisDim = !drawXAxis ? 0 : dimension.xAxis,
+                    yAxisDim = !drawYAxis ? 0 : dimension.yAxis,
+                    navChartDim = !drawNavChart ? 0 : dimension.navChart;
+
+                // compute dimension of main and nav charts, and offsets
+                var marginTop = margin.top + chartTitleDim;
+                height = svgHeight - marginTop - margin.bottom - chartTitleDim - xTitleDim - xAxisDim - navChartDim + 30;
+                heightNav = navChartDim - margin.topNav - margin.bottomNav;
+                var marginTopNav = svgHeight - margin.bottom - heightNav - margin.topNav;
+                width = svgWidth - margin.left - margin.right - 10;
+                widthNav = width;
+
+                // append the svg
+                svg = selection.append("svg")
+                    .attr("width", svgWidth)
+                    .attr("height", svgHeight)
+                    .style("border", function(d) {
+                      if (border) return "1px solid lightgray";
+                      else return null;
+                    });
+
+                // create main group and translate
+                var main = svg.append("g")
+                    .attr("transform", "translate (" + margin.left + "," + margin.top + ")");
+
+                // define clip-path
+                main.append("defs").append("clipPath")
+                    .data(yArr)
+                    .attr("class","line")
+                    .attr("d",line)
+                    .attr("id", "myClip")
+                .style("fill", "#000")
+                  .append("rect")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("width", width)
+                    .attr("height", height);
+          
+
+                // create chart background
+                main.append("rect")
+                    .data(yArr)
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("width", width)
+                    .attr("height", height)
+                    .style("fill", "#f5f5f5")
+
+
+                // note that two groups are created here, the latter assigned to barG;
+                // the former will contain a clip path to constrain objects to the chart area;
+                // no equivalent clip path is created for the nav chart as the data itself
+                // is clipped to the full time domain
+                // add group for x axis
+                xAxisG = main.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform", "translate(0," + (height) + ")");
+
+                // add group for y axis
+                yAxisG = main.append("g")
+                    .attr("id", "yaxis")
+                    .attr("class", "y axis")
+                    .attr("transform", "translate(" + (width+5) + " ,0)");
+
+
+                // in x axis group, add x axis title
+                xAxisG.append("text")
+                    .attr("class", "title")
+                    //.attr("x", width / 2)
+                    .attr("x", 0)
+                    .attr("y", 25)
+                    .attr("dy", ".71em")
+                    .text(function(d) {
+                      var text = xTitle == undefined ? "" : xTitle;
+                      return text;
+                    });
+
+
+
+                // in y axis group, add y axis title
+                /*yAxisG.append("text")
+                    .attr("class", "title")
+                    .attr("transform", "translate(" + (-margin.right+150) + ", " + (-margin.top / 3 - 10) + ")")
+                    .attr("dy", ".71em")
+                    .text(function(d) {
+                      var text = yTitle == undefined ? "" : yTitle;
+                      return text;
+                    });*/
+
+                var barG = main.append("g")
+                    .attr("class", "barGroup")
+                    .attr("transform", "translate(0, 0)")
+                    .attr("clip-path", "url(#myClip)");
+
+                // define main chart scales
+                x = d3.time.scale().range([0, width]);
+                y = d3.scale.ordinal().domain(yDomain).rangeRoundPoints([height, 0], 1)
+
+                var line = d3.svg.line()
+                .x(function(d) { return x(d.x); })
+                .y(function(d) { return y(d.y); });
+
+
+                // define main chart axis
+                xAxis = d3.svg.axis().orient("bottom");
+                yAxis = d3.svg.axis().tickSize(-width-5).orient("right");
+
+                // add nav chart
+                var nav = svg.append("g")
+                    .attr("transform", "translate (" + margin.left + "," + marginTopNav + ")");
+
+                // add nav background
+                nav.append("rect")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("width", width)
+                    .attr("height", heightNav)
+                    .style("fill", "#F5F5F5")
+                    .style("shape-rendering", "crispEdges")
+                    .attr("transform", "translate(0, 0)");
+
+                // add group to data items
+                var navG = nav.append("g")
+                    .attr("class", "nav");
+
+                // add group to hold nav x axis
+                // please note that a clip path has yet to be added here (tbd)
+                var xAxisGNav = nav.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform", "translate(0," + heightNav + ")");
+
+                // define nav chart scales
+                xNav = d3.time.scale().range([0, widthNav]);
+                yNav = d3.scale.ordinal().domain(yDomain).rangeRoundPoints([heightNav, 0], 1)
+
+                // define nav axis
+                var xAxisNav = d3.svg.axis().orient("bottom");
+
+                // first, the full time domain
+                //var endTime = new Date(ts);
+                var endTime = new Date();
+                console.log(endTime)
+                var startTime = new Date();
+                startTime.setDate(endTime.getDate()-1);
+                console.log(startTime)
+                var interval = endTime.getTime() - startTime.getTime()*30000;
+                console.log(interval)
+
+                // then the viewport time domain (what's visible in the main chart and the viewport in the nav chart)
+                var endTimeViewport = new Date();
+                //var endTimeViewport = new Date(ts);
+                var startTimeViewport = new Date(endTime.getTime() - width / pixelsPerSecond * 70000);
+                var intervalViewport = endTimeViewport.getTime() - startTimeViewport.getTime();
+                var offsetViewport = startTimeViewport.getTime() - startTime.getTime();
+
+                // set the scale domains for main and nav charts
+                x.domain([startTimeViewport, endTimeViewport]);
+                xNav.domain([startTime, endTime]);
+
+                // update axis with modified scale
+                xAxis.scale(x)(xAxisG);
+                yAxis.scale(y)(yAxisG);
+
+                xAxisNav.scale(xNav)(xAxisGNav);
+
+                // create brush (moveable, changable rectangle that determines the time domain of main chart)
+                var viewport = d3.svg.brush()
+                    .x(xNav)
+                    .extent([startTimeViewport, endTimeViewport])
+                    .on("brush", function () {
+                      // get the current time extent of viewport
+                      var extent = viewport.extent();
+                      startTimeViewport = extent[0];
+                      endTimeViewport = extent[1];
+
+                      // compute viewport extent in milliseconds
+                      intervalViewport = endTimeViewport.getTime() - startTimeViewport.getTime();
+                      offsetViewport = startTimeViewport.getTime() - startTime.getTime();
+
+                      // handle invisible viewport
+                      if (intervalViewport == 0) {
+                        intervalViewport = maxSeconds * 30000;
+                        offsetViewport = 0;
+                      }
+
+                      // update the x domain of the main chart
+                      x.domain(viewport.empty() ? xNav.domain() : extent);
+
+                      // update the x axis of the main chart
+                      xAxis.scale(x)(xAxisG);
+
+                      // update display
+                      refresh();
+                    });
+
+                // create group and assign to brush
+                var viewportG = nav.append("g")
+                    .attr("class", "viewport")
+                    .call(viewport)
+                    .selectAll("rect")
+                    .attr("height", heightNav);
+
+                // initial invocation; update display
+                data = [];
+                refresh();
+
+                // function to refresh the viz upon changes of the time domain
+                // (which happens constantly), or after arrival of new data, or at init
+                function refresh() {
+
+                  // process data to remove too late data items
+                  data = data.filter(function(d) {
+                    if (d.time.getTime() > startTime.getTime()) return true;
+                  })
+
+
+				  //Yash added here
+				  //yAxis.tickValues(d3.scale.linear()
+					//.domain(y.domain())
+					  //.ticks(data.length));
+				  
+
+                  // determine number of categories
+                  var categoryCount = yDomain.length;
+                  if (debug) console.log("yDomain", yDomain)
+
+                  // here we bind the new data to the main chart
+                  // note: no key function is used here; therefore the data binding is
+                  // by index, which effectivly means that available DOM elements
+                  // are associated with each item in the available data array, from
+                  // first to last index; if the new data array contains fewer elements
+                  // than the existing DOM elements, the LAST DOM elements are removed;
+                  // basically, for each step, the data items "walks" leftward (each data
+                  // item occupying the next DOM element to the left);
+                  // This data binding is very different from one that is done with a key
+                  // function; in such a case, a data item stays "resident" in the DOM
+                  // element, and such DOM element (with data) would be moved left, until
+                  // the x position is to the left of the chart, where the item would be
+                  // exited
+                  var updateSel = barG.selectAll(".bar")
+                      .data(data);
+
+                  // remove items
+                  updateSel.exit().remove();
+
+                  // add items
+                  updateSel.enter()
+                      .append(function(d) {
+                        if (debug) { console.log("d", JSON.stringify(d)); }
+                        if (d.type == undefined) console.error(JSON.stringify(d))
+                        var type = d.type || "circle";
+                        var node = document.createElementNS("http://www.w3.org/2000/svg", type);
+                        return node;
+                      })
+                      .style("cursor", "pointer")
+                      .attr("class", "bar")
+                      .attr("id", function() {
+                        return "bar-" + barId++;
+                      })
+                      .on("click", (d, i) => {
+
+                        displayInfo(d.full);
+                      })
+                      .on("mouseenter", function(d, i) {
+                        d3.selectAll("circle")
+                                   .style("stroke", undefined);
+                        let info = [d.full.entities[0].name];
+                        d3.select("#tooltip").style({
+                                    visibility: "visible",
+                                    top: d3.event.clientY + 5 + "px",
+                                    left: d3.event.clientX + 10 + "px",
+                                    opacity: 1
+                                })
+                                .data(info)
+                                .text(d => d);
+                        d3.select(this).style("stroke", function(d, i) {
+                            return "black";
+                        });
+
+                      })
+                      .on("mouseleave", function(d,i) {
+                                d3.selectAll("circle")
+                                   .style("stroke", undefined);
+                                d3.select("#tooltip").style({
+                                    visibility: "hidden",
+                                    opacity: 0
+                                });
+                      });
+
+
+
+
+                  d3.selectAll('.y .tick')
+                    .data(data)
+                    .style("cursor", "pointer")
+                    .on('mouseover', function(d, i) {
+                        d3.select(this).style("stroke", function(d, i) {
+                            var categry = d3.select(this).text();
+                            //console.log(categry);
+                            return "black";
+                        });
+
+                      })
+                    .on("click", function(d, i) {
+
+                      d3.select(this).style("stroke", function(d, i) {
+                            var categry = d3.select(this).text();
+                            var filtered_data = {"data":[]};
+                            for(var j=0;j<data.length;j++){
+                                var st = JSON.stringify(data[j].full);
+                                if(st.indexOf(categry)!=-1){
+                                    filtered_data['data'].push(data[j].full)
+                                }
+                            }
+                            plotChart(filtered_data,categry+" Sentiment Analysis");
+                            return "black";
+                      });
+                        
+                    })
+                    .on("mouseleave", function(d,i) {
+                                d3.select(this)
+                                   .style("stroke", undefined);
+                      });
+
+                  // update items; added items are now part of the update selection
+
+                  updateSel
+                      .attr("x", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "rect":
+                            var size = d.size || 6;
+                            retVal = Math.round(x(d.time) - size / 2);
+                            break;
+                          default:
+                        }
+                        return retVal;
+                      })
+                      .attr("y", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "rect":
+                            var size = d.size || 6;
+                            retVal = y(d.category) - size / 2;
+                            break;
+                          default:
+                        }
+                        return retVal;
+                      })
+                      .attr("width", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "rect":
+                            retVal = d.size;
+                            break;
+                          default:
+                        }
+                        return retVal;
+                      })
+                      .attr("height", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "rect":
+                            retVal = Number(d.size);
+                            break;
+                          default:
+                        }
+
+                        return retVal;
+                      })
+                      .attr("cx", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "circle":
+                            retVal = Number(Math.round(x(d.time)));
+                            break;
+                          default:
+                        }
+                        return retVal;
+                      })
+                      .style("cursor", "pointer")
+                      .attr("cy", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "circle":
+                            retVal = y(d.category);
+                            break;
+                          default:
+                        }
+                        return retVal;
+                      })
+                      .attr("r", function(d) {
+                        var retVal = null;
+                        switch (getTagName(this)) {
+                          case "circle":
+                            retVal = Number(d.size) / 2;
+                            break;
+                          default:
+                        }
+                        return Number(retVal);
+                      })
+                      .style("fill", function(d) { return d.color || "black"; })
+                      .style("fill-opacity", function(d) { return 0.45 || 1; });
+                     //yash balar
+
+
+                  // create update selection for the nav chart, by applying data
+                  var updateSelNav = navG.selectAll("circle")
+                      .data(data);
+
+
+                  // remove items
+                  updateSelNav.exit().remove();
+
+                  // add items
+                  updateSelNav.enter().append("circle")
+                      .attr("r", 1)
+                      .attr("fill", "black")
+
+                  // added items now part of update selection; set coordinates of points
+                  updateSelNav
+                      .attr("cx", function(d) {
+                        return Math.round(xNav(d.time));
+                      })
+                      .attr("cy", function(d) {
+                        return yNav(d.category);
+                      })
+
+                } // end refreshChart function
+
+
+                function getTagName(that) {
+                  var tagName = d3.select(that).node().tagName;
+                  return (tagName);
+                }
+
+
+                // function to keep the chart "moving" through time (right to left)
+                setInterval(function() {
+
+                  if (halted) return;
+
+                  // get current viewport extent
+                  var extent = viewport.empty() ? xNav.domain() : viewport.extent();
+                  var interval = extent[1].getTime() - extent[0].getTime();
+                  var offset = extent[0].getTime() - xNav.domain()[0].getTime();
+
+                  // compute new nav extents
+                  endTime = new Date();
+                  //console.log(endTime)
+                  startTime = new Date();
+                  startTime.setDate(endTime.getDate() - 1);
+                  //console.log(startTime)
+
+                  // compute new viewport extents
+                  startTimeViewport = new Date(startTime.getTime() + offset);
+                  endTimeViewport = new Date(startTimeViewport.getTime() + interval);
+                  viewport.extent([startTimeViewport, endTimeViewport])
+
+                  // update scales
+                  x.domain([startTimeViewport, endTimeViewport]);
+                  xNav.domain([startTime, endTime]);
+
+                  // update axis
+                  xAxis.scale(x)(xAxisG);
+                  xAxisNav.scale(xNav)(xAxisGNav);
+
+                  // refresh svg
+                  refresh();
+
+                }, 200)
+
+                // end setInterval function
+
+                return chart;
+
+      } // end chart function
+
+
+      // chart getters/setters
+
+      // new data item (this most recent item will appear
+      // on the right side of the chart, and begin moving left)
+      chart.datum = function(_) {
+        if (arguments.length == 0) return datum;
+        datum = _;
+        data.push(datum);
+
+        return chart;
+      }
+      
+      chart.refresh= function(_) {
+        if (arguments.length == 0) return datum;
+        datum = _;
+        data = [];
+        data.push(datum);
+
+        return chart;
+      }
+      
+      chart.clear= function() {
+        data = [];
+        return chart;
+      }
+
+      // svg width
+      chart.width = function(_) {
+        if (arguments.length == 0) return svgWidth;
+        svgWidth = _;
+        return chart;
+      }
+
+      // svg height
+      chart.height = function(_) {
+        if (arguments.length == 0) return svgHeight;
+        svgHeight = _;
+        return chart;
+      }
+
+      // svg border
+      chart.border = function(_) {
+        if (arguments.length == 0) return border;
+        border = _;
+        return chart;
+      }
+
+      // chart title
+      chart.title = function(_) {
+        if (arguments.length == 0) return chartTitle;
+        chartTitle = _;
+        return chart;
+      }
+
+      // x axis title
+      chart.xTitle = function(_) {
+        if (arguments.length == 0) return xTitle;
+        xTitle = _;
+        return chart;
+      }
+
+      // y axis title
+      chart.yTitle = function(_) {
+        if (arguments.length == 0) return yTitle;
+        yTitle = _;
+        return chart;
+      }
+
+      // yItems (can be dynamically added after chart construction)
+      chart.yDomain = function(_) {
+        if (arguments.length == 0) return yDomain;
+        yDomain = _;
+        if (svg) {
+          // update the y ordinal scale
+          y = d3.scale.ordinal().domain(yDomain).rangeRoundPoints([height, 0], 1);
+          // update the y axis
+          yAxis.scale(y)(yAxisG);
+          // update the y ordinal scale for the nav chart
+          yNav = d3.scale.ordinal().domain(yDomain).rangeRoundPoints([heightNav, 0], 1);
+
+        }
+        return chart;
+      }
+
+      // debug
+      chart.debug = function(_) {
+        if (arguments.length == 0) return debug;
+        debug = _;
+        return chart;
+      }
+
+      // halt
+      chart.halt = function(_) {
+        if (arguments.length == 0) return halted;
+        halted = _;
+        return chart;
+      }
+
+      // version
+      chart.version = version;
+
+      return chart;
+
+    } // end realTimeChart function
+
+    function displayInfo(article){
+        cleanDisplay();
+		var prefix = "";
+        $("#company-name").append(article["entities"][0]["name"])
+		$("#ticker").append(article["entities"][0]["ticker"])
+		$("#sector").append(article["entities"][0]["sector"])
+		$("#industry").append(article["entities"][0]["industry"])
+		
+		$("#insert").append("<li>Type/Group: " + article["event_groups"][0]["type"] +"/"+ article["event_groups"][0]["group"] + "</li>")
+		
+		$("#impact-score-overall").append(article["event_impact_score"]["overall"].toFixed(2));
+		var on_entities = article["event_impact_score"]["on_entities"];
+        $("#impact").append("<li>Impact Score(on " + on_entities[0]["entity"]+"): "+on_entities[0]["on_entity"] + "</li>")
+		
+		$("#article-type").append(article["article_type"]).css('textTransform','capitalize');
+		$("#url").append("<a href='" + article["article_url"] +"' target='_blank'>Visit article</a>")
+		$("#author-rank").append(article["overall_author_rank"])
+		$("#source-rank").append(article["overall_source_rank"])
+		$("#first-mention").append(article["first_mention"].toString()).css('textTransform','capitalize');
+		
+	};
+        
+    function cleanDisplay(){
+        $("#company-name").html("");
+        $("#company-name").append("Name: ");
+        $("#ticker").html("");
+        $("#ticker").append("Ticker: ");
+        $("#sector").html("");
+        $("#sector").append("Sector: ");
+        $("#industry").html("");
+        $("#industry").append("Industry: ");
+        $("#first-mention").html("");
+        $("#first-mention").append("First Mention: ");
+        $("#source-rank").html("");
+        $("#source-rank").append("Source Rank: ");
+        $("#author-rank").html("");
+        $("#author-rank").append("Author Rank: ");
+        $("#url").html("");
+        $("#url").append("Link: ");
+        $("#article-type").html("");
+        $("#article-type").append("Article-Type: ");
+        $("#impact").html("");
+        $("#impact-score-overall").html("");
+        $("#impact-score-overall").append("Impact-Score(Overall): ")
+        $("#insert").html("");
+    }
+        
+    function plotChart(fdata,title){
+        var filtered_data=[];
+        fdata['data'].forEach(function(d) {
+            if(d.harvested_at!=null && d.story_sentiment!=null){
+                d.harvested_at = new Date(d.harvested_at);
+                d.story_sentiment = +d.story_sentiment;
+                filtered_data.push(d);
+            }
+
+            filtered_data.sort((a,b)=>{return a.harvested_at-b.harvested_at; })
+
+        });
+        
+        var margin = {top: 30, right: 30, bottom: 40, left: 50};
+            var width = 400 - margin.left - margin.right,
+            height = 300 - margin.top - margin.bottom;
+
+        var x = d3.time.scale()
+            .range([0, width]);
+
+        var y = d3.scale.linear()
+               .domain([-1,1])
+                .range([height, 0]);
+
+        var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom")
+            .tickFormat("");
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left")
+            .tickSize(-width);
+
+        var line = d3.svg.line()
+            .x(function(d) { return x(new Date(d.harvested_at)); })
+            .y(function(d) { return y(+d.story_sentiment); });
+
+        d3.select("#Line_Chart").remove();
+        var svg = d3.select("#lineDiv").append("svg")
+            .attr("id","Line_Chart")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        var gX = svg.append("g")
+            .attr("class", "axis axis--x")
+            .attr("transform", "translate(0,"+height+")");
+
+        var gY = svg.append("g")
+            .attr("class", "axis axis--y"); 
+
+        gY.append("text")
+            .attr("class", "axis-title")
+            .attr("transform", "translate(250,-25)")
+            .attr("y", 6)
+            .attr("dy", ".71em")
+            .text(title);
+
+      x.domain(d3.extent(filtered_data, function(d) { return d.harvested_at; }));
+      y.domain([-1,1]);
+
+      yAxis.tickValues(d3.scale.linear()
+          .domain(y.domain())
+          .ticks(1));
+      gX.call(xAxis);
+
+      gY.call(yAxis)
+         .selectAll(".tick")
+         .classed("tick--one", function(d) { return +d.story_sentiment; });
+
+      svg.append("path")
+          .datum(filtered_data)
+          .attr("class", "line")
+          .attr("d", line);
+    }
+        
+    </script>
+    </body>
+    </html>
